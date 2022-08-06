@@ -1,0 +1,11 @@
+albumentations
+ipykernel
+jupyter
+matplotlib
+torch
+torchvision
+tqdm
+pyyaml
+scipy
+scikit-learn
+ypstruct

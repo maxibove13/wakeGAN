@@ -1,0 +1,12 @@
+data:
+  # precs: ['576', '672', '768', '864', '960']
+  precs: ['576']
+  lim_around_wt: [2, 5, 2, 2]
+  z: 90
+  regions: [6, 3] # Simulation regions per direction
+  figures:
+    plot_wf_slices: True
+    # For visualizing original chaman simulations slices
+    clim_ux: [0, 12]
+    clim_uy: [-4, 4]
+    lw: 0.3
