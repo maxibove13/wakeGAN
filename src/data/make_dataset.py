@@ -9,7 +9,7 @@ The images are not not normalized."""
 __author__ = "Maximiliano Bove"
 __email__ = "maxibove13@gmail.com"
 __status__ = "Development"
-__date__ = "03/22"
+__date__ = "08/22"
 
 # Built-in modules
 import json
