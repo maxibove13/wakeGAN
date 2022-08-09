@@ -8,4 +8,5 @@ tqdm
 pyyaml
 scipy
 scikit-learn
+split-folders
 ypstruct

@@ -1,7 +1,7 @@
 data:
-  # precs: ['576', '672', '768', '864', '960']
-  precs: ['576']
-  lim_around_wt: [2, 5, 2, 2]
+  precs: ['576', '672', '768', '864', '960']
+  lim_around_wt: [2, 4, 2, 2]
+  shape: [44, 44]
   z: 90
   regions: [6, 3] # Simulation regions per direction
   figures:

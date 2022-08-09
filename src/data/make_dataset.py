@@ -43,7 +43,7 @@ with open(os.path.join('data','aux', 'metadata','turns.json')) as f:
     turns = json.load(f)
 
 
-def make_dataset(z, plot_wf_slice):
+def make_dataset(z, plot_wf_slice, wt_xy, clim):
     """
     Process raw CFD data of a LES WF simulation in order to obtain grayscale images of the horizontal velocity field of each WT.
     # Iterate over field
@@ -55,48 +55,49 @@ def make_dataset(z, plot_wf_slice):
     plot_wf_slice : bool
         Whether to plot the horizontal slices or not.
 
+    wt_xy : dict
+        Coordinates of Wind Turbine
+
+    clim : tuple
+        clim of Ux and Uy
+
     Returns
     -------
     """
 
-    # Load WT coordinates
-    wt_xy = {}
-    for idx, turn in enumerate(turns.keys()):
-        wt_xy[turn] = wt_coord['coord_layout'][:,0:2,idx]
+    processes = [] # Create list of processes
+    # Iterate over all angles
+    for key, value in turns.items():
+        # Define the process
+        p = multiprocessing.Process(target=make_dataset_per_prec, args=[prec, key, value, z, clim, plot_wf_slice, wt_xy])
+        # Start the process
+        p.start()
+        # Append the process to list of processes
+        processes.append(p)
 
-    # Define clim for visualizing chaman simulation slices
-    clim_ux = config['data']['figures']['clim_ux']
-    clim_uy = config['data']['figures']['clim_uy']
-
-    # Iterate over all precursors
-    for prec in config['data']['precs']:
-        processes = [] # Create list of processes
-        # Iterate over all angles
-        for key, value in turns.items():
-            # Define the process
-            p = multiprocessing.Process(target=make_dataset_per_prec, args=[prec, key, value, z, clim_ux, clim_uy, plot_wf_slice, wt_xy])
-            # Start the process
-            p.start()
-            # Append the process to list of processes
-            processes.append(p)
-
-        # Wait for all processes to finish before moving on
-        for process in processes:
-            process.join()
+    # Wait for all processes to finish before moving on
+    for process in processes:
+        process.join()
 
     return
 
-def make_dataset_per_prec(prec, key, value, z, clim_ux, clim_uy, plot_wf_slice, wt_xy):
+def make_dataset_per_prec(prec, key, value, z, clim, plot_wf_slice, wt_xy):
+
+    clim_ux = clim[0]
+    clim_uy = clim[1]
+
     # Iterate over field
     for u in ['U', 'UMean']:
+
         # Initialize figure and subplots
         fig, axs = plt.subplots(2,1, sharex=True)
+
+        # Define case name
+        case = f"n{prec}{key}"
 
         # Iterate over velocity components:
         for comp, comp_names in enumerate(['Ux', 'Uy']):
 
-            # Define case name
-            case = f"n{prec}{key}"
 
             # Obtain image and grids from simulation
             image, limits, grid_x, grid_y = get_image_from_simulation(case, z, t[prec], u, comp)
@@ -118,8 +119,32 @@ def make_dataset_per_prec(prec, key, value, z, clim_ux, clim_uy, plot_wf_slice, 
             for wt in range(wt_xy_sim.shape[0]):
                 # Find corners around WT slice as indices of field slice and plot its limits
                 ids_wt = isolate_wt_slice(wt_xy_sim, wt, axs[comp], grid_x, grid_y, plot=plot_wf_slice)
+
+                a,b,c,d = 0,0,0,0
+                while (ids_wt[3] - ids_wt[2]) > config['data']['shape'][0]:
+                    ids_wt[3] -= 1
+                    a += 1
+                while (ids_wt[3] - ids_wt[2]) < config['data']['shape'][0]:
+                    ids_wt[3] += 1
+                    b += 1
+                while (ids_wt[1] - ids_wt[0]) > config['data']['shape'][0]:
+                    ids_wt[0] += 1
+                    c += 1
+                while (ids_wt[1] - ids_wt[0]) < config['data']['shape'][0]:
+                    ids_wt[1] -= 1
+                    d += 1
+                assert a <= 3 or b <= 3 or c <= 3 or d <= 3, f"{a},{b},{c},{d}"
+
                 # Crop slice around corners to have one WT image. This is our sample.
                 sample = np.flip(image[ids_wt[2]:ids_wt[3], ids_wt[0]:ids_wt[1]], axis=0)
+                # Check sample is square
+                assert sample.shape[0] == sample.shape[1], f"Samples must be squared. {case}_{wt} shape is {sample.shape}"
+
+                if wt == 0:
+                    first_sample_shape = sample.shape
+                else:
+                    assert first_sample_shape == sample.shape, f"Samples do not have the same shape {first_sample_shape} != {sample.shape}"
+
                 # Save it in gray scales without normalization.
                 if comp == 0:
                     plt.imsave(os.path.join('data', 'processed', f'{case}{wt}_ux.png'), sample, cmap=cm.gray)
@@ -147,7 +172,7 @@ def make_dataset_per_prec(prec, key, value, z, clim_ux, clim_uy, plot_wf_slice, 
                 fig.suptitle(f"Horizontal instantaneous velocity field at z ~ ${z}$ m\n${prec[0]}.{prec[-2:]}$ m/s | {key} = {value}°", y=1.05)
                 fig.savefig(os.path.join('figures', 'wf_slices', f"u_{case}.png"), facecolor='white', transparent=False, bbox_inches='tight', dpi=300)
 
-    print(f'{case} data processing finished')
+    print(f'{case} data processing finished. Image shape: {sample.shape}')
 
     return
 
@@ -310,6 +335,18 @@ def isolate_wt_slice(wt_xy_sim, wt, ax, grid_x, grid_y, plot=True):
 
 if __name__ == "__main__":
     tic = time.time()
-    make_dataset(config['data']['z'], config['data']['figures']['plot_wf_slices'])
+
+    # Load WT coordinates
+    wt_xy = {}
+    for idx, turn in enumerate(turns.keys()):
+        wt_xy[turn] = wt_coord['coord_layout'][:,0:2,idx]
+
+    # Define clim for visualizing chaman simulation slices
+    clim = (config['data']['figures']['clim_ux'], config['data']['figures']['clim_ux'])
+
+    # Make dataset
+    for prec in config['data']['precs']:
+        make_dataset(config['data']['z'], config['data']['figures']['plot_wf_slices'], wt_xy, clim)
+
     toc = time.time()
-    print(f"Data process duration: {1000*(toc-tic):.4f} ms ")
+    print(f"Data process duration: {((toc-tic)/60):.2f} m ")
