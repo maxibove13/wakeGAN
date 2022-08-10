@@ -16,13 +16,13 @@ import os
 import splitfolders
 import yaml
 
-def split_data(ratio):
-    # Define data directory
-    data_dir = os.path.join('../data/processed')
+def split_data(data_dir, ratio):
     # Split data into train, val and test folders
     splitfolders.ratio(data_dir, output=data_dir, seed=1337, ratio=ratio)
 
 if __name__ == "__main__":
+    # Define data directory
+    data_dir = os.path.join('..','..', 'data', 'preprocessed')
     # Initialize Argument Parser
     parser = argparse.ArgumentParser()
     # Add arguments we want to parse
@@ -31,4 +31,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
     ratio = tuple(args.ratio)
     # Run function
-    split_data(ratio)
+    split_data(data_dir, ratio)

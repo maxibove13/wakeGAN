@@ -120,6 +120,7 @@ def make_dataset_per_prec(prec, key, value, z, clim, plot_wf_slice, wt_xy):
                 # Find corners around WT slice as indices of field slice and plot its limits
                 ids_wt = isolate_wt_slice(wt_xy_sim, wt, axs[comp], grid_x, grid_y, plot=plot_wf_slice)
 
+                # Adjust the indices in order to have the preselected shape
                 a,b,c,d = 0,0,0,0
                 while (ids_wt[3] - ids_wt[2]) > config['data']['shape'][0]:
                     ids_wt[3] -= 1
@@ -133,6 +134,7 @@ def make_dataset_per_prec(prec, key, value, z, clim, plot_wf_slice, wt_xy):
                 while (ids_wt[1] - ids_wt[0]) < config['data']['shape'][0]:
                     ids_wt[1] -= 1
                     d += 1
+                # If the adjustment required more than 3 pixels is not acceptable
                 assert a <= 3 or b <= 3 or c <= 3 or d <= 3, f"{a},{b},{c},{d}"
 
                 # Crop slice around corners to have one WT image. This is our sample.
@@ -147,9 +149,9 @@ def make_dataset_per_prec(prec, key, value, z, clim, plot_wf_slice, wt_xy):
 
                 # Save it in gray scales without normalization.
                 if comp == 0:
-                    plt.imsave(os.path.join('data', 'processed', f'{case}{wt}_ux.png'), sample, cmap=cm.gray)
+                    plt.imsave(os.path.join('data', 'preprocessed', 'ux',f'{case}{wt}_ux.png'), sample, cmap=cm.gray)
                 else:
-                    plt.imsave(os.path.join('data', 'processed', f'{case}{wt}_uy.png'), sample, cmap=cm.gray)
+                    plt.imsave(os.path.join('data', 'preprocessed', 'uy',f'{case}{wt}_uy.png'), sample, cmap=cm.gray)
 
             # Set labels
             if comp == 1:

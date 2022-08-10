@@ -1,7 +1,10 @@
 data/raw
-data/processed
+data/preprocessed
 
 .venv_zz
 
 figures/wf_slices
 
+*notes.md
+
+*pyc

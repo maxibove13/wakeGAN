@@ -12,14 +12,14 @@ import torch
 import torch.nn as nn
 
 class Embedding(nn.Module):
-    def __init__(self, channels_img, label_dim):
+    def __init__(self, channels, label_dim):
         super(Embedding, self).__init__()
-        self.channels = channels_img
         self.label_dim = label_dim
-
-        self.emb = nn.Linear(label_dim, label_dim*label_dim)
+        self.channels = channels
+        self.emb = nn.Linear(label_dim, label_dim**2)
 
     def forward(self, x):
+        print(x.shape)
         x = self.emb(x)
         x = torch.reshape(x, (x.shape[0], self.channels, self.label_dim, self.label_dim))
         return x
@@ -53,15 +53,15 @@ class Discriminator(nn.Module):
         return x
 
 class Generator(nn.Module):
-    def __init__(self, z_dim, channels_img, features_g):
+    def __init__(self, channels, height, features_g):
         super(Generator, self).__init__()
         self.gen = nn.Sequential(
-            # Input N x z_dim x 1 x 1
-            self._block(z_dim, features_g*16, 4, 1, 0), # N x f_g*16 x 4 x 4
-            self._block(features_g*16, features_g*8, 4, 2, 1), # 8x8
-            self._block(features_g*8, features_g*4, 4, 2, 1), # 16x16
-            self._block(features_g*4, features_g*2, 4, 2, 1), # 16x16
-            nn.ConvTranspose2d(features_g*2, channels_img, kernel_size=4, stride=2, padding=1),
+            # Input: (N,C,H,H), (472,2,44,44)
+            nn.ConvTranspose2d(in_channels, out_channels, kernel_size=4, stride=2, padding=1), 
+            nn.LeakyReLU(),
+            nn.ConvTranspose2d(in_channels, out_channels, kernel_size=4, stride=2, padding=1), 
+            nn.LeakyReLU(),
+            nn.ConvTranspose2d(in_channels, out_channels, kernel_size=4, stride=2, padding=1), # (N,C,W,H), (472,2,44,44)
             nn.Tanh(), # [-1, 1]
         )
 
@@ -81,15 +81,14 @@ def initialize_weights(model):
             nn.init.normal_(m.weight.data, 0.0, 0.02)
 
 def test():
-    N, in_channels, H, W = 570, 2, 44, 44
-    z_dim = 100
-    mu = torch.randn((N, in_channels, H))
-    x = torch.randn((N, in_channels, H, W))
-    emb = Embedding(in_channels, H)
+    N, C, H, W = 570, 2, 44, 44
+    mu = torch.randn((N, C, H))
+    x = torch.randn((N, C, H, W))
+    emb = Embedding(C, H)
     print(f"Flow parameter shape: {mu.shape}")
     print(f"Embedding shape: {emb(mu).shape}")
 
-    disc = Discriminator(in_channels+2, 8)
+    disc = Discriminator(C+2, 8)
     initialize_weights(disc)
 
     x_emb = torch.cat((emb(mu), x), 1)
@@ -97,10 +96,10 @@ def test():
     print(f"Cat shape: {x_emb.shape}")
     print(f"Discriminator shape: {disc(x_emb).shape}")
 
-    gen = Generator(z_dim, in_channels, 8)
+    gen = Generator(C, H, 8)
     initialize_weights(gen)
-    z = torch.randn((N, z_dim, 1, 1))
-    print(f"Generator shape: {gen(z).shape}")
+    # Generator receives image like inputs, we apply the embedding to the (N, C, H) flow parameter (mu) in order to pass to the Generator (instead of the usual random noise): (N, C, H, H).
+    print(f"Generator shape: {gen(emb(mu)).shape}")
 
 
 if __name__ == "__main__":
