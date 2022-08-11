@@ -47,6 +47,17 @@ class WF_Dataset(Dataset):
 
         return image
 
+class ProcessedDataset:
+    def __init__(self, image, labels):
+        self.image = image
+        self.labels = labels
+
+    def __len__(self):
+        return len(self.image)
+
+    def __getitem__(self, idx):
+        return self.image[idx], self.labels[idx] 
+
 
 def load_prepare_dataset(root_dir):
     """
@@ -80,11 +91,13 @@ def load_prepare_dataset(root_dir):
         # Merge Ux and Uy images
         images[c, :, :, :] = np.stack((im_ux, im_uy), axis=-1)
 
-    # Transforms array to tensors
-    inflow = from_numpy(inflow)
-    images = from_numpy(images)
 
-    return inflow, images
+
+    # Transforms array to tensors (adjust the shape to: NCHW)
+    inflow = from_numpy(np.moveaxis(inflow, -1, 1))
+    images = from_numpy(np.moveaxis(images, -1, 1))
+
+    return images, inflow
 
 # Resize transform
 resize = A.Compose(
