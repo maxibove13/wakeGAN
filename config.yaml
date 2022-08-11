@@ -10,6 +10,7 @@ data:
     clim_ux: [0, 12]
     clim_uy: [-4, 4]
     lw: 0.3
+  final_size: [64, 64]
 
 train:
   device: 'cuda:1'

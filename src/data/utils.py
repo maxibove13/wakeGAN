@@ -11,10 +11,17 @@ __date__ = "08/22"
 import os
 import cv2
 
+import albumentations as A
+from PIL import Image
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 from torch.utils.data import Dataset
 from torch import from_numpy
+import yaml
+
+# Load config file
+with open('config.yaml') as file:
+    config = yaml.safe_load(file)
 
 class WF_Dataset(Dataset):
     def __init__(self, root_dir):
@@ -34,6 +41,9 @@ class WF_Dataset(Dataset):
 
         # Read image
         image = np.array(cv2.imread(os.path.join(root_and_dir, img_file), cv2.IMREAD_GRAYSCALE))
+
+        # Apply transform
+        image = resize(image=image)["image"]
 
         return image
 
@@ -75,3 +85,12 @@ def load_prepare_dataset(root_dir):
     images = from_numpy(images)
 
     return inflow, images
+
+# Resize transform
+resize = A.Compose(
+    [
+        A.Resize(width=config['data']['final_size'][0], height=config['data']['final_size'][1], interpolation=Image.BICUBIC),
+        # A.Normalize(mean=[0, 0, 0], std=[1, 1, 1]),
+        # A.pytorch.ToTensorV2(),
+    ]
+)
