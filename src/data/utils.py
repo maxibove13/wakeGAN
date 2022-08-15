@@ -67,14 +67,15 @@ def load_prepare_dataset(root_dir):
     dataset_ux = WF_Dataset(root_dir=os.path.join(root_dir, 'ux')) # Load Ux
     dataset_uy = WF_Dataset(root_dir=os.path.join(root_dir, 'uy')) # Load Uy
     
+
+
     # Define arrays to store inflow velocity and images
     inflow = np.zeros((len(dataset_ux), dataset_ux[0].shape[0], 2))
     images = np.zeros((len(dataset_ux), dataset_ux[0].shape[0], dataset_ux[0].shape[1], 2))
-    # Iterate over all samples
-
     # Instantiate MinMaxScaler
     scaler = MinMaxScaler()
 
+    # Iterate over all samples
     for c, (im_ux, im_uy) in enumerate(zip(dataset_ux, dataset_uy)):
 
         # Normalize all flow parameters and flow field using MinMaxScalers
@@ -90,7 +91,6 @@ def load_prepare_dataset(root_dir):
 
         # Merge Ux and Uy images
         images[c, :, :, :] = np.stack((im_ux, im_uy), axis=-1)
-
 
 
     # Transforms array to tensors (adjust the shape to: NCHW)

@@ -10,6 +10,11 @@ __date__ = "08/22"
 
 import torch
 import torch.nn as nn
+import yaml
+
+# Load config file
+with open('config.yaml') as file:
+    config = yaml.safe_load(file)
 
 class Embedding(nn.Module):
     def __init__(self, channels, label_dim):
@@ -51,7 +56,7 @@ class Generator(nn.Module):
         self.channels = channels
         self.linear = nn.Linear(height, height*32)
         self.gen = nn.Sequential(
-            # Input: (N, z_dim, 1, 1)
+            # Input: 
             nn.ConvTranspose2d(height, features_g*16, 4, 2, 1),  # (N,f_g*16,16,16)
             nn.LeakyReLU(),
             nn.ConvTranspose2d(features_g*16, features_g*8, 4, 2, 1), # (N,f_g*8,32,32)
@@ -72,15 +77,14 @@ def initialize_weights(model):
             nn.init.normal_(m.weight.data, 0.0, 0.02)
 
 def test():
-    N, C, H, W = 570, 2, 64, 64
+    N, C, H, W = 472, 2, 64, 64
     mu = torch.randn((N, C, H))
     x = torch.randn((N, C, H, W))
     emb = Embedding(C, H)
     print(f"Flow parameter shape: {mu.shape}")
     print(f"Embedding shape: {emb(mu).shape}")
 
-    disc = Discriminator(C+2, 8)
-    initialize_weights(disc)
+    disc = Discriminator(C+2, config['model']['f_d'])
 
     x_emb = torch.cat((emb(mu), x), 1)
 

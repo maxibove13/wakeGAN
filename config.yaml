@@ -13,13 +13,13 @@ data:
   final_size: [64, 64]
 
 model:
-  f_g: 8
-  f_d: 8
+  f_g: 64
+  f_d: 64
 
 train:
   device: 'cuda:1'
-  lr: 1.0e-2
-  num_epochs: 50
+  lr: 1.0e-5
+  num_epochs: 100
   batch_size: 64
   num_workers: 4 # number of processes that gen batches in parallel
   n_splits: 2 # For k-fold cross validation
