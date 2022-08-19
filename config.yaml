@@ -11,6 +11,7 @@ data:
     clim_uy: [-4, 4]
     lw: 0.3
   final_size: [64, 64]
+  channels: 2
 
 model:
   f_g: 64
@@ -19,7 +20,7 @@ model:
 train:
   device: 'cuda:1'
   lr: 1.0e-5
-  num_epochs: 100
+  num_epochs: 30
   batch_size: 64
   num_workers: 4 # number of processes that gen batches in parallel
-  n_splits: 2 # For k-fold cross validation
+  n_splits: 5 # For k-fold cross validation

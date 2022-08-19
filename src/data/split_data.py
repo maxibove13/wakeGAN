@@ -22,7 +22,7 @@ def split_data(data_dir, ratio):
 
 if __name__ == "__main__":
     # Define data directory
-    data_dir = os.path.join('..','..', 'data', 'preprocessed')
+    data_dir = os.path.join('data', 'preprocessed')
     # Initialize Argument Parser
     parser = argparse.ArgumentParser()
     # Add arguments we want to parse

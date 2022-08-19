@@ -149,9 +149,19 @@ def make_dataset_per_prec(prec, key, value, z, clim, plot_wf_slice, wt_xy):
 
                 # Save it in gray scales without normalization.
                 if comp == 0:
-                    plt.imsave(os.path.join('data', 'preprocessed', 'ux',f'{case}{wt}_ux.png'), sample, cmap=cm.gray)
+                    plt.imsave(
+                        os.path.join('data', 'preprocessed', 'ux',f'{case}{wt}_ux.png'), 
+                        sample, 
+                        cmap=cm.gray,
+                        vmin=config['data']['figures']['clim_ux'][0], vmax=config['data']['figures']['clim_ux'][1]
+                        )
                 else:
-                    plt.imsave(os.path.join('data', 'preprocessed', 'uy',f'{case}{wt}_uy.png'), sample, cmap=cm.gray)
+                    plt.imsave(
+                        os.path.join('data', 'preprocessed', 'uy',f'{case}{wt}_uy.png'), 
+                        sample, 
+                        cmap=cm.gray, 
+                        vmin=config['data']['figures']['clim_uy'][0], vmax=config['data']['figures']['clim_uy'][1]
+                        )
 
             # Set labels
             if comp == 1:

@@ -1,7 +1,46 @@
-# Wind farm wake modelling using DC-CGAN
+# Wind farm wake modelling using cDCGAN
 
 Based on the work by Zhang J, Zhao X, "Wind farm wake modeling based on deep convolutional
 conditional generative adversarial network", Energy, [https://doi.org/10.1016/j.energy.2021.121747](https://doi.org/10.1016/j.energy.2021.121747)
+
+# Repo usage
+
+## Generate dataset:
+
+```
+./src/data/make_dataset.py
+```
+
+## Split data between training and testing:
+
+```
+./src/data/split_data.py --ratio 0.9 0.1
+```
+
+## Train the cDCGAN:
+
+```
+./src/train.py
+```
+
+
+# Workflow:
+
+1) CFD simulations of a WF
+2) Horizontal slices at hub's height of mean horizontal velocity (Ux, Uy)
+3) Crop slices into several images around each WT of the WF.
+4) Save them as image files mapped with a certaing vmin and vmax. (vmin, vmax) -> (0, 255)
+5) Read them, convert them to float32, rescale them to (0, 1)
+6) Extract first column of pixels on each channel (inflow velocity)
+7) Transform to tensor
+8) For each fold:
+    For each epoch:
+        For each minibatch:
+            - Generate fake image given inflow
+            - Pass real, fake and inflows to discriminator
+            - Evaluate loss, backprop on Disc and Gen
+
+
 
 ### Flowchart of the proposed surrogated model
 
@@ -65,16 +104,3 @@ The inflow wind profiles (\mu) are the ones at the start of each subdomain conta
 ## Issues
 
 ## Questions
-
-- The flow parameters are embedded through a fully-connected embedding layer before concatenated with the flow field and fed to discriminator. What does this mean?
-
-- What are exactly the flow parameters? \mu?
-
-- How can a spatial resolution be of d dimension?
-
-- What do they mean with: all the training data including the training input (\mu) and the training target (U) are standarized before being fed into the NN for training? 
-MinMaxScalers?
-
-- What +scale means? combining \mu and U in a single tensor? Doesn't the Generator takes just \mu as input?
-
-- If the yaw angle is 90, does Uy changes at all? What about starting with 1 channel? 
