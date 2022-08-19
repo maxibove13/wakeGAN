@@ -1,5 +1,6 @@
 data/raw
 data/preprocessed
+data/aux/**
 
 .venv_zz
 
