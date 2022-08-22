@@ -23,6 +23,8 @@ import yaml
 with open('config.yaml') as file:
     config = yaml.safe_load(file)
 
+CHANNELS = config['data']['channels']
+
 class WF_Dataset(Dataset):
     def __init__(self, root_dir):
         super(WF_Dataset, self).__init__()
@@ -101,6 +103,10 @@ def load_prepare_dataset(root_dir):
     # Transforms array to tensors (adjust the shape to: NCHW)
     inflow = from_numpy(np.moveaxis(inflow, -1, 1))
     images = from_numpy(np.moveaxis(images, -1, 1))
+
+    # Adjust tensors to number of channels
+    inflow = inflow[:, 0:CHANNELS, :]
+    images = images[:, 0:CHANNELS, :, :]
 
     return images, inflow
 

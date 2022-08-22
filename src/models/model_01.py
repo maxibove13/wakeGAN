@@ -16,6 +16,8 @@ import yaml
 with open('config.yaml') as file:
     config = yaml.safe_load(file)
 
+CHANNELS = config['data']['channels']
+
 class Embedding(nn.Module):
     def __init__(self, channels, label_dim):
         super(Embedding, self).__init__()
@@ -54,9 +56,9 @@ class Generator(nn.Module):
         super(Generator, self).__init__()
         self.height = height
         self.channels = channels
-        self.linear = nn.Linear(height, height*32)
+        self.linear = nn.Linear(height, height*64//CHANNELS)
         self.gen = nn.Sequential(
-            # Input: 
+            # Input: (N, 64, 8, 8)
             nn.ConvTranspose2d(height, features_g*16, 4, 2, 1),  # (N,f_g*16,16,16)
             nn.LeakyReLU(),
             nn.ConvTranspose2d(features_g*16, features_g*8, 4, 2, 1), # (N,f_g*8,32,32)
@@ -91,10 +93,14 @@ def test():
     print(f"Cat shape: {x_emb.shape}")
     print(f"Discriminator shape: {disc(x_emb).shape}")
 
-    gen = Generator(C, H, 8)
+    gen = Generator(C, H, 16)
     initialize_weights(gen)
     # Generator receives (N, C, H) flow parameter (mu)
     print(f"Generator shape: {gen(mu).shape}")
+
+    print(sum(p.numel() for p in gen.parameters()))
+    print(sum(p.numel() for p in disc.parameters()))
+    print(sum(p.numel() for p in emb.parameters()))
 
 
 if __name__ == "__main__":

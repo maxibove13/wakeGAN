@@ -14,18 +14,16 @@ import time
 
 # Third party modules
 from sklearn.model_selection import KFold
-import numpy as np
-from matplotlib import cm, pyplot as plt
-from mpl_toolkits.axes_grid1 import ImageGrid, make_axes_locatable
+from matplotlib import pyplot as plt
+from mpl_toolkits.axes_grid1 import ImageGrid
 import torch
 from torch.utils.data import DataLoader, SubsetRandomSampler
-from torchvision.utils import save_image
 import yaml
 
 # Local modules
 from data.utils import load_prepare_dataset, ProcessedDataset
 from models.model_01 import Generator, Discriminator, Embedding, initialize_weights
-from visualization.utils import plot_metrics, calc_mse
+from visualization.utils import plot_metrics, calc_mse, plot_flow_field_comparison
 
 root_dir = os.path.join('data', 'preprocessed', 'train')
 
@@ -63,13 +61,17 @@ def train():
     dataset = ProcessedDataset(images, inflow)
 
     # Initialize models and send them to device
-    print('Initializing Embedding, Generator and Discriminator')
     # Embedding takes (C, H)
     emb = Embedding(CHANNELS, images.shape[-1]).to(device)
     # Generator takes (C, H, f_g)
     gen = Generator(CHANNELS, config['data']['final_size'][0], config['model']['f_g']).to(device)
-    # Discriminator takes (C) (4 channels, Ux, Uy, Ux_in, Uy_in)
-    disc = Discriminator(CHANNELS+2, config['model']['f_d']).to(device)
+    # Discriminator takes (C*2, f_d) (4 channels, Ux, Uy, Ux_in, Uy_in)
+    disc = Discriminator(CHANNELS*2, config['model']['f_d']).to(device)
+    print(
+        f"Initializing Embedding with {sum(p.numel() for p in emb.parameters())} params\n"
+        f"Initializing Generator with {sum(p.numel() for p in gen.parameters())} params\n"
+        f"Initializing Discriminator with {sum(p.numel() for p in disc.parameters())} params\n"
+        )
 
     # Define losses
     criterion = torch.nn.BCELoss()
@@ -88,8 +90,8 @@ def train():
 
     # Iterate over kfolds
     rmse_folds = []
+    rmse_folds_sum = [0, 0]
     for fold, (train_idx, val_idx) in enumerate(kfold.split(images)):
-
 
         # Load flow field data
         train_subsampler = SubsetRandomSampler(train_idx)
@@ -134,7 +136,6 @@ def train():
 
                 # noise = torch.randn((config['train']['batch_size'], 64, 8, 8)).to(device)
 
-                # Initialize weights of gen
                 torch.autograd.set_detect_anomaly(False)
                 # Generate flow field prediction (fake image) with training data in mini batch
                 fake = gen(label) # gen generates flow field image from label inflow velocity
@@ -157,13 +158,11 @@ def train():
                 loss_g.backward() # Backward pass
                 opt_gen.step() # Update weights
 
-
             # Test model on validation data (generate flow field prediction with validation data)
             gen.eval()
             with torch.no_grad():
                 rmse = [0, 0]
                 # Iterate over minibatches of val data
-                print()
                 for idx, (images, labels) in enumerate(valloader):
                     # Generate images for this minibatch
                     images = images.float().to(device)
@@ -172,80 +171,56 @@ def train():
                     # Iterate over all images in this batch
                     for i, (image, im_gen) in enumerate(zip(images, ims_gen)):
                         rmse[0] += calc_mse(image[0], im_gen[0])
-                        rmse[1] += calc_mse(image[1], im_gen[1])
+                        if CHANNELS > 1:
+                            rmse[1] += calc_mse(image[1], im_gen[1])
                     rmse[0] /= len(images)
                     rmse[1] /= len(images)
                 rmse[0] /= len(valloader)
                 rmse[1] /= len(valloader)
                 rmse[0] = torch.sqrt(rmse[0]).cpu().detach().numpy()
-                rmse[1] = torch.sqrt(rmse[1]).cpu().detach().numpy()
+                if CHANNELS > 1:
+                    rmse[1] = torch.sqrt(rmse[1]).cpu().detach().numpy()
+            gen.train()
 
-
-
-                # Plot figure with images real and fake
-                grid_ims = [image[0], im_gen[0], im_gen[0]-image[0],image[1], im_gen[1], im_gen[1]-image[1]]
-                if epoch == 0:
-                    fig_im = plt.figure(dpi=300)
-                    grid = ImageGrid(fig_im, 111, nrows_ncols=(2,3), axes_pad=0.1, share_all='True', cbar_location='right', cbar_mode='each')
-                for c, (ax, cax, im) in enumerate(zip(grid, grid.cbar_axes, grid_ims)):
-                    
-
-                    if c < 3:
-                        im = im * (CLIM_UX[1]-CLIM_UX[0]) + CLIM_UX[0]
-                        ax.set_title('Ux')
-                        vmin = CLIM_UX[0]; vmax = CLIM_UX[1]
-                    else:
-                        im = im * (CLIM_UY[1]-CLIM_UY[0]) + CLIM_UY[0]
-                        ax.set_title('Uy')
-                        vmin = CLIM_UY[0]; vmax = CLIM_UY[1]
-
-                    
-                    im = ax.imshow(
-                        im.cpu(),
-                        cmap=cm.coolwarm, 
-                        interpolation='none',
-                        vmin=vmin, vmax=vmax)
-
-                    cb = cax.colorbar(im)
-                    # if epoch == 0:
-                    #     if c == 0:
-                    #         ax.set_ylabel("$Ux$")
-                    #     elif c == 3:
-                    #         ax.set_ylabel("$Uy$")
-                # divider = make_axes_locatable(ax)
-                # cax = divider.append_axes('right', size='5%', pad=0.05)
-                # fig_im.colorbar(im, cax=cax, orientation='vertical')
-
-
-                fig_im.suptitle(f"RMSE_Ux: {torch.sqrt(calc_mse(image[0], im_gen[0])):.3f}, RMSE_Uy: {torch.sqrt(calc_mse(image[1], im_gen[1])):.3f}")
-                fig_im.savefig(os.path.join('figures', 'image_comparison.png'), dpi=300)
-                
-                        
             # Print progress every epoch
             print(
                 f"Epoch [{epoch+1:03d}/{NUM_EPOCHS:03d} - "
                 f"Loss D_real: {loss_real:.3f}, Loss D_fake: {loss_fake:.3f}"
                 f", Loss G: {loss_g:.3f}, RMSE Val.: ({rmse[0]:.3f}, {rmse[1]:.3f})]"
                 )
-            # Plot loss
+                        
             if epoch == 0:
+                fig_im = plt.figure(dpi=300) # Initialize figure for flow field comparison
+                grid = ImageGrid( # Create grid of images
+                    fig_im, 
+                    111, 
+                    nrows_ncols=(2,3) if CHANNELS == 2 else (1,3), 
+                    axes_pad=0.15, 
+                    share_all='True', 
+                    cbar_location='right', 
+                    cbar_mode='edge')
                 # Initialize figure for loss and rmse evolution
                 fig, axs = plt.subplots(2,1,dpi=300)
                 # Initialize list containing metrics
-                loss_disc = []; loss_gen = []
+                loss_disc_fake = []; loss_disc_real = []; loss_gen = []
                 rmse_evol_ux = []; rmse_evol_uy = []
-            # Plot metrics
-            plot_metrics(loss_disc, loss_gen, loss_d, loss_g, epoch, fig, axs, NUM_EPOCHS, rmse, rmse_evol_ux, rmse_evol_uy)
 
-            
+            # Plot metrics and flow field comparison
+            plot_metrics(loss_disc_real, loss_disc_fake, loss_real, loss_fake, loss_gen, loss_g, epoch, fig, axs, NUM_EPOCHS, rmse, rmse_evol_ux, rmse_evol_uy)
+            plot_flow_field_comparison(fig_im, grid, image, im_gen)
 
         # Append RMSE to list of RMSE per fold
         rmse_folds.append(rmse)
         # Average RMSE of all folds
-        print(f"Average RMSE of fold {fold+1}/{n_splits}: {rmse_folds[fold]}")
-        gen.train()
+        print(f"\nAverage RMSE of fold {fold+1}/{n_splits}: ({rmse_folds[fold][0]:.2f}, {rmse_folds[fold][1]:.2f})")
 
-    print(f"Average RMSE of all folds: {sum(rmse_folds)/len(rmse_folds):.2f}")
+        rmse_folds_sum[0] += rmse_folds[fold][0]
+        rmse_folds_sum[1] += rmse_folds[fold][1]
+
+    print(
+        f"\nAverage RMSE of all folds: "
+        f"({rmse_folds_sum[0]/len(rmse_folds):.2f}, {rmse_folds_sum[1]/len(rmse_folds):.2f})")
+
 
             # Train discriminator on real [U, \mu] and generated [U_gen, \mu] data by feeding 
 
