@@ -25,14 +25,17 @@ CLIM_UX = config['data']['figures']['clim_ux']
 CLIM_UY = config['data']['figures']['clim_uy']
 CHANNELS = config['data']['channels']
 
-def plot_metrics(loss_disc_real, loss_disc_fake, loss_real, loss_fake, loss_gen, loss_g, epoch, fig, axs, num_epochs, rmse, rmse_evol_ux, rmse_evol_uy):
+def plot_metrics(loss_disc_real, loss_disc_fake, loss_real, loss_fake, loss_gen, loss_g, epoch, fig, axs, NUM_EPOCHS, rmse_tra, rmse_val, rmse_evol_ux_tra, rmse_evol_uy_tra, rmse_evol_ux_val, rmse_evol_uy_val):
     # Append current epoch loss to list of losses
     loss_disc_real.append(float(loss_real.detach().cpu()))
     loss_disc_fake.append(float(loss_fake.detach().cpu()))
     loss_gen.append(float(loss_g.detach().cpu()))
-    rmse_evol_ux.append(float(rmse[0]))
+
+    rmse_evol_ux_tra.append(float(rmse_tra[0]))
+    rmse_evol_ux_val.append(float(rmse_val[0]))
     if CHANNELS > 1:
-        rmse_evol_uy.append(float(rmse[1]))
+        rmse_evol_uy_tra.append(float(rmse_tra[1]))
+        rmse_evol_uy_val.append(float(rmse_val[1]))
     # Plot loss
     x = np.arange(0, epoch+1)
 
@@ -40,9 +43,11 @@ def plot_metrics(loss_disc_real, loss_disc_fake, loss_real, loss_fake, loss_gen,
     axs[0].plot(x, loss_disc_fake, label='Disc. loss (fake)', color='b')
     axs[0].plot(x, loss_gen, label='Gen. loss', color='r')
 
-    axs[1].plot(x, rmse_evol_ux, label='RMSE Ux', color='g')
+    axs[1].plot(x, rmse_evol_ux_tra, label='RMSE Ux (Tra.)', color='g', ls='--')
+    axs[1].plot(x, rmse_evol_ux_val, label='RMSE Ux (Val.)', color='g', ls='-')
     if CHANNELS > 1:
-        axs[1].plot(x, rmse_evol_uy, label='RMSE Uy', color='y')
+        axs[1].plot(x, rmse_evol_uy_tra, label='RMSE Uy (Tra.)', color='y', ls='--')
+        axs[1].plot(x, rmse_evol_uy_val, label='RMSE Uy (Val.)', color='y', ls='-')
     
     axs[1].set(xlabel='epochs')
     axs[0].set(ylabel='loss')
@@ -50,13 +55,13 @@ def plot_metrics(loss_disc_real, loss_disc_fake, loss_real, loss_fake, loss_gen,
     
     axs[0].xaxis.set_ticklabels([])
 
-    axs[0].set_ylim(0, 1.5)
+    axs[0].set_ylim(0, 1.6)
     axs[1].set_ylim(0, 0.4)
 
     for i, ax in enumerate(axs):
         if epoch == 0:
-            ax.set_xlim(1, num_epochs-1)
-            ax.legend(loc='upper right' if i == 1 else 'lower right')
+            ax.set_xlim(1, NUM_EPOCHS-1)
+            ax.legend(loc='upper right' if i == 1 else 'lower right', fontsize='x-small')
             ax.xaxis.set_major_locator(MaxNLocator(integer=True))
         # Save figure
         ax.grid(visible=True)
@@ -117,7 +122,7 @@ def plot_flow_field_comparison(fig_im, grid, image, im_gen):
 
     # Add suptitle
     fig_im.suptitle(
-        f"Flow field comparison:\n"
+        f"Flow field comparison (Validation data):\n"
         f"RMSE: ({sqrt(calc_mse(image[0], im_gen[0])):.3f}, {sqrt(calc_mse(image[1], im_gen[1])) if CHANNELS == 2 else 0.0:.3f})"
         )
 

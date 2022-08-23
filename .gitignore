@@ -2,9 +2,13 @@ data/raw
 data/preprocessed
 data/aux/**
 
+models
+
 .venv_zz
 
 figures/wf_slices
+figures/metrics.png
+figures/image_comparison.png
 
 *notes.md
 

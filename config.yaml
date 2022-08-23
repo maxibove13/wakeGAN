@@ -13,9 +13,13 @@ data:
   final_size: [64, 64]
   channels: 1
 
-model:
+models:
   f_g: 64
   f_d: 64
+  load: True
+  save: True
+  name_gen: 'wake_gan_gen.pth'
+  name_disc: 'wake_gan_disc.pth'
 
 train:
   device: 'cuda:1'

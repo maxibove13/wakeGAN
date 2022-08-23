@@ -64,9 +64,9 @@ def train():
     # Embedding takes (C, H)
     emb = Embedding(CHANNELS, images.shape[-1]).to(device)
     # Generator takes (C, H, f_g)
-    gen = Generator(CHANNELS, config['data']['final_size'][0], config['model']['f_g']).to(device)
+    gen = Generator(CHANNELS, config['data']['final_size'][0], config['models']['f_g']).to(device)
     # Discriminator takes (C*2, f_d) (4 channels, Ux, Uy, Ux_in, Uy_in)
-    disc = Discriminator(CHANNELS*2, config['model']['f_d']).to(device)
+    disc = Discriminator(CHANNELS*2, config['models']['f_d']).to(device)
     print(
         f"Initializing Embedding with {sum(p.numel() for p in emb.parameters())} params\n"
         f"Initializing Generator with {sum(p.numel() for p in gen.parameters())} params\n"
@@ -80,6 +80,28 @@ def train():
     opt_gen = torch.optim.Adam(gen.parameters(), lr=config['train']['lr'], betas=(0.5, 0.999))
     opt_disc = torch.optim.Adam(disc.parameters(), lr=config['train']['lr'], betas=(0.5, 0.999))
     print(f'Defining Adam optimizers for both Gen and Disc')
+
+    # Load models
+    if config['models']['load']:
+        print('Loading pretrained model')
+        # Load Gen
+        checkpoint_gen = torch.load(
+            os.path.join('models', config['models']['name_gen']),
+            map_location = device
+        )
+        gen.load_state_dict(checkpoint_gen["state_dict"])
+        opt_gen.load_state_dict(checkpoint_gen["optimizer"])
+        for param_group in opt_gen.param_groups:
+            param_group["lr"] = config['train']['lr']
+        # Load Disc
+        checkpoint_disc = torch.load(
+            os.path.join('models', config['models']['name_disc']),
+            map_location = device
+        )
+        disc.load_state_dict(checkpoint_disc["state_dict"])
+        opt_disc.load_state_dict(checkpoint_disc["optimizer"])
+        for param_group in opt_disc.param_groups:
+            param_group["lr"] = config['train']['lr']
 
     gen.train()
     disc.train()
@@ -158,10 +180,28 @@ def train():
                 loss_g.backward() # Backward pass
                 opt_gen.step() # Update weights
 
-            # Test model on validation data (generate flow field prediction with validation data)
+                # Evaluate model on training data
+                gen.eval()
+                with torch.no_grad():
+                    rmse_tra = [0, 0]
+                    for (im, fake) in zip(image, gen(label)):
+                        rmse_tra[0] += calc_mse(im[0], fake[0])
+                        if CHANNELS > 1:
+                            rmse_tra[1] += calc_mse(im[1], fake[1])             
+                    rmse_tra[0] /= len(image)
+                    rmse_tra[1] /= len(image)
+                gen.train()
+            
+            rmse_tra[0] /= len(trainloader)
+            rmse_tra[1] /= len(trainloader)
+            rmse_tra[0] = torch.sqrt(rmse_tra[0]).cpu().detach().numpy()
+            if CHANNELS > 1:
+                rmse_tra[1] = torch.sqrt(rmse_tra[1]).cpu().detach().numpy()
+
+            # Test model on validation data
             gen.eval()
             with torch.no_grad():
-                rmse = [0, 0]
+                rmse_val = [0, 0]
                 # Iterate over minibatches of val data
                 for idx, (images, labels) in enumerate(valloader):
                     # Generate images for this minibatch
@@ -170,23 +210,24 @@ def train():
                     ims_gen = gen(labels)
                     # Iterate over all images in this batch
                     for i, (image, im_gen) in enumerate(zip(images, ims_gen)):
-                        rmse[0] += calc_mse(image[0], im_gen[0])
+                        rmse_val[0] += calc_mse(image[0], im_gen[0])
                         if CHANNELS > 1:
-                            rmse[1] += calc_mse(image[1], im_gen[1])
-                    rmse[0] /= len(images)
-                    rmse[1] /= len(images)
-                rmse[0] /= len(valloader)
-                rmse[1] /= len(valloader)
-                rmse[0] = torch.sqrt(rmse[0]).cpu().detach().numpy()
+                            rmse_val[1] += calc_mse(image[1], im_gen[1])
+                    rmse_val[0] /= len(images)
+                    rmse_val[1] /= len(images)
+                rmse_val[0] /= len(valloader)
+                rmse_val[1] /= len(valloader)
+                rmse_val[0] = torch.sqrt(rmse_val[0]).cpu().detach().numpy()
                 if CHANNELS > 1:
-                    rmse[1] = torch.sqrt(rmse[1]).cpu().detach().numpy()
+                    rmse_val[1] = torch.sqrt(rmse_val[1]).cpu().detach().numpy()
             gen.train()
 
             # Print progress every epoch
             print(
                 f"Epoch [{epoch+1:03d}/{NUM_EPOCHS:03d} - "
                 f"Loss D_real: {loss_real:.3f}, Loss D_fake: {loss_fake:.3f}"
-                f", Loss G: {loss_g:.3f}, RMSE Val.: ({rmse[0]:.3f}, {rmse[1]:.3f})]"
+                f", Loss G: {loss_g:.3f}, RMSE Tra.: ({rmse_tra[0]:.3f}, {rmse_tra[1]:.3f}),"
+                f" RMSE Val.: ({rmse_val[0]:.3f}, {rmse_val[1]:.3f})]"
                 )
                         
             if epoch == 0:
@@ -203,14 +244,30 @@ def train():
                 fig, axs = plt.subplots(2,1,dpi=300)
                 # Initialize list containing metrics
                 loss_disc_fake = []; loss_disc_real = []; loss_gen = []
-                rmse_evol_ux = []; rmse_evol_uy = []
+                rmse_evol_ux_tra = []; rmse_evol_uy_tra = []
+                rmse_evol_ux_val = []; rmse_evol_uy_val = []
 
             # Plot metrics and flow field comparison
-            plot_metrics(loss_disc_real, loss_disc_fake, loss_real, loss_fake, loss_gen, loss_g, epoch, fig, axs, NUM_EPOCHS, rmse, rmse_evol_ux, rmse_evol_uy)
+            plot_metrics(loss_disc_real, loss_disc_fake, loss_real, loss_fake, loss_gen, loss_g, epoch, fig, axs, NUM_EPOCHS, rmse_tra, rmse_val, rmse_evol_ux_tra, rmse_evol_uy_tra, rmse_evol_ux_val, rmse_evol_uy_val)
             plot_flow_field_comparison(fig_im, grid, image, im_gen)
 
+            # Save models checkpoints every 10 epochs
+            if epoch % 10 == 0 and fold == 0:
+                if config['models']['save']:
+                    # Save Generator
+                    torch.save({
+                        "state_dict": gen.state_dict(),
+                        "optimizer": opt_gen.state_dict()
+                    }, os.path.join('models', config['models']['name_gen']))
+                    # Save Discriminator
+                    torch.save({
+                        "state_dict": disc.state_dict(),
+                        "optimizer": opt_disc.state_dict()
+                    }, os.path.join('models', config['models']['name_disc']))
+                    print('Saving models...')
+
         # Append RMSE to list of RMSE per fold
-        rmse_folds.append(rmse)
+        rmse_folds.append(rmse_val)
         # Average RMSE of all folds
         print(f"\nAverage RMSE of fold {fold+1}/{n_splits}: ({rmse_folds[fold][0]:.2f}, {rmse_folds[fold][1]:.2f})")
 
@@ -220,18 +277,6 @@ def train():
     print(
         f"\nAverage RMSE of all folds: "
         f"({rmse_folds_sum[0]/len(rmse_folds):.2f}, {rmse_folds_sum[1]/len(rmse_folds):.2f})")
-
-
-            # Train discriminator on real [U, \mu] and generated [U_gen, \mu] data by feeding 
-
-            # Train generator on discriminator output
-
-            # Generate flow field prediction with validation data in mini batch
-
-
-        # Save model on each epoch
-
-        # Compute accuracy like metrics on each epoch
 
     return
 

@@ -3,6 +3,12 @@
 Based on the work by Zhang J, Zhao X, "Wind farm wake modeling based on deep convolutional
 conditional generative adversarial network", Energy, [https://doi.org/10.1016/j.energy.2021.121747](https://doi.org/10.1016/j.energy.2021.121747)
 
+## Results
+
+![Loss and RMSE](https://github.com/maxibove13/wakeGAN/blob/main/figures/image_comparison.png)
+
+![Image comparison](https://raw.githubusercontent.com/maxibove13/wakeGAN/main/figures/metrics_ref.png)
+
 # Repo usage
 
 ## Generate dataset:
@@ -23,6 +29,11 @@ conditional generative adversarial network", Energy, [https://doi.org/10.1016/j.
 ./src/train.py
 ```
 
+## Test the cDGAN:
+
+```
+./src/test.py
+```
 
 # Workflow:
 
