@@ -1,13 +1,18 @@
-# Wind farm wake modelling using cDCGAN
+# Wind farm wake modeling using cDCGAN
 
 Based on the work by Zhang J, Zhao X, "Wind farm wake modeling based on deep convolutional
 conditional generative adversarial network", Energy, [https://doi.org/10.1016/j.energy.2021.121747](https://doi.org/10.1016/j.energy.2021.121747)
 
 ## Results
 
-![Loss and RMSE](https://github.com/maxibove13/wakeGAN/blob/main/figures/image_comparison.png)
+![Image comparison test](https://github.com/maxibove13/wakeGAN/blob/main/figures/image_comparison_test.png)
 
-![Image comparison](https://raw.githubusercontent.com/maxibove13/wakeGAN/main/figures/metrics_ref.png)
+![Image comparison test](https://github.com/maxibove13/wakeGAN/blob/main/figures/image_comparison_err_test.png)
+
+![Image comparison](https://github.com/maxibove13/wakeGAN/blob/main/figures/image_comparison_ref.png)
+
+
+![Loss and RMSE](https://raw.githubusercontent.com/maxibove13/wakeGAN/main/figures/metrics_ref.png)
 
 # Repo usage
 
@@ -35,7 +40,7 @@ conditional generative adversarial network", Energy, [https://doi.org/10.1016/j.
 ./src/test.py
 ```
 
-# Workflow:
+# Data pipeline:
 
 1) CFD simulations of a WF
 2) Horizontal slices at hub's height of mean horizontal velocity (Ux, Uy)
