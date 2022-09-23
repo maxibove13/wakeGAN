@@ -17,14 +17,18 @@ models:
   f_g: 64
   f_d: 64
   load: True
-  save: True
+  save: False
   name_gen: 'wake_gan_gen.pth'
   name_disc: 'wake_gan_disc.pth'
 
 train:
   device: 'cuda:1'
   lr: 1.0e-4
-  num_epochs: 150
+  num_epochs: 200
   batch_size: 64
-  num_workers: 4 # number of processes that gen batches in parallel
-  n_splits: 2 # For k-fold cross validation
+  multibatch: True
+  num_workers: 8 # number of processes that gen batches in parallel
+
+validation:
+  kfold: False # If false train with all training data
+  n_splits: 5 # For k-fold cross validation

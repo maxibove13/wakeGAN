@@ -32,11 +32,14 @@ class Embedding(nn.Module):
 
 class Discriminator(nn.Module):
     # features_d are the channels that change as we go through the layers of the D
-    def __init__(self, channels, features_d):
+    def __init__(self, channels, features_d, height):
         super(Discriminator, self).__init__()
+        self.height = height
+        self.channels = channels
+        self.linear = nn.Linear(height, height**2)
         self.disc = nn.Sequential(
             # Input: (N,4,64,64)
-            nn.Conv2d(channels, features_d, 4, 2, 1), # (N,8,32,32)
+            nn.Conv2d(channels*2, features_d, 4, 2, 1), # (N,8,32,32)
             nn.LeakyReLU(0.2),
             nn.Conv2d(features_d, features_d*2, 4, 2, 1), # (N,16,16,16)
             nn.LeakyReLU(0.2),
@@ -47,9 +50,12 @@ class Discriminator(nn.Module):
             nn.Sigmoid()
         )
 
-    def forward(self, x):
-        x = self.disc(x)
-        return x
+    def forward(self, x, mu):
+        mu = self.linear(mu)
+        mu = torch.reshape(mu, (mu.shape[0], self.channels, self.height, self.height))
+        x_emb = torch.cat((x, mu), 1)
+        x_emb = self.disc(x_emb)
+        return x_emb
 
 class Generator(nn.Module):
     def __init__(self, channels, height, features_g):
@@ -58,7 +64,7 @@ class Generator(nn.Module):
         self.channels = channels
         self.linear = nn.Linear(height, height*64//CHANNELS)
         self.gen = nn.Sequential(
-            # Input: (N, 64, 8, 8)
+            # Input: (N, H, 8, 8)
             nn.ConvTranspose2d(height, features_g*16, 4, 2, 1),  # (N,f_g*16,16,16)
             nn.LeakyReLU(),
             nn.ConvTranspose2d(features_g*16, features_g*8, 4, 2, 1), # (N,f_g*8,32,32)
@@ -67,10 +73,10 @@ class Generator(nn.Module):
             nn.Tanh(), # [-1, 1]
         )
 
-    def forward(self, x):
-        x = self.linear(x)
-        x = torch.reshape(x, (x.shape[0], self.height, 8, 8))
-        x = self.gen(x)
+    def forward(self, x): # (N,C,H)
+        x = self.linear(x) # (N,C,H*64/C)
+        x = torch.reshape(x, (x.shape[0], self.height, 8, 8)) # (N,H,8,8)
+        x = self.gen(x) # (N,C,W,H)
         return x
 
 def initialize_weights(model):
@@ -79,19 +85,19 @@ def initialize_weights(model):
             nn.init.normal_(m.weight.data, 0.0, 0.02)
 
 def test():
-    N, C, H, W = 472, 2, 64, 64
+    N, C, H, W = 472, CHANNELS, config['data']['final_size'][1], config['data']['final_size'][0]
     mu = torch.randn((N, C, H))
     x = torch.randn((N, C, H, W))
-    emb = Embedding(C, H)
+    # emb = Embedding(C, H)
     print(f"Flow parameter shape: {mu.shape}")
-    print(f"Embedding shape: {emb(mu).shape}")
+    # print(f"Embedding shape: {emb(mu).shape}")
 
-    disc = Discriminator(C+2, config['model']['f_d'])
+    disc = Discriminator(C, config['models']['f_d'], H)
 
-    x_emb = torch.cat((emb(mu), x), 1)
+    # x_emb = torch.cat((x, emb(mu)), 1)
 
-    print(f"Cat shape: {x_emb.shape}")
-    print(f"Discriminator shape: {disc(x_emb).shape}")
+    # print(f"Cat shape: {x_emb.shape}")
+    print(f"Discriminator shape: {disc(x, mu).shape}")
 
     gen = Generator(C, H, 16)
     initialize_weights(gen)
@@ -100,7 +106,7 @@ def test():
 
     print(sum(p.numel() for p in gen.parameters()))
     print(sum(p.numel() for p in disc.parameters()))
-    print(sum(p.numel() for p in emb.parameters()))
+    # print(sum(p.numel() for p in emb.parameters()))
 
 
 if __name__ == "__main__":

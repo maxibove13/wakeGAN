@@ -9,7 +9,9 @@ models
 figures/wf_slices
 figures/metrics.png
 figures/image_comparison.png
+figures/err_evol.png
 
 *notes.md
 
 *pyc
+*swp

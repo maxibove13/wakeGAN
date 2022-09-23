@@ -15,7 +15,7 @@ import time
 # Third party modules
 import torch
 from torch.utils.data import DataLoader
-from torch import sum, sqrt
+from torch import sqrt
 from matplotlib import cm, pyplot as plt
 from mpl_toolkits.axes_grid1 import ImageGrid
 import yaml

@@ -14,9 +14,9 @@ import cv2
 import albumentations as A
 from PIL import Image
 import numpy as np
-from sklearn.preprocessing import MinMaxScaler
 from torch.utils.data import Dataset
 from torch import from_numpy
+import torchvision
 import yaml
 
 # Load config file
@@ -47,6 +47,7 @@ class WF_Dataset(Dataset):
         # Apply transform
         image = resize(image=image)["image"]
 
+
         return image
 
 class ProcessedDataset:
@@ -74,25 +75,10 @@ def load_prepare_dataset(root_dir):
     # Define arrays to store inflow velocity and images
     inflow = np.zeros((len(dataset_ux), dataset_ux[0].shape[0], 2))
     images = np.zeros((len(dataset_ux), dataset_ux[0].shape[0], dataset_ux[0].shape[1], 2))
-    # Instantiate MinMaxScaler
-    # scaler = MinMaxScaler()
 
     # Iterate over all samples
     for c, (im_ux, im_uy) in enumerate(zip(dataset_ux, dataset_uy)):
 
-        # Normalize all flow parameters and flow field using MinMaxScalers
-        # Fit the scaler
-        # if c == 0:
-        #     scaler.fit(im_ux.reshape(-1,1))
-        # # Rescale the images
-        # im_ux_tmp = scaler.transform(im_ux.reshape(-1, 1)); im_ux = im_ux_tmp.reshape(im_ux.shape)
-        # im_uy_tmp = scaler.transform(im_uy.reshape(-1, 1)); im_uy = im_uy_tmp.reshape(im_uy.shape)
-        # Rescale to [0,1] range
-        im_ux = im_ux.astype(np.float32)
-        im_uy = im_uy.astype(np.float32)
-        im_ux /= 255
-        im_uy /= 255
-        
         # Get inflow velocity for Ux and Uy and stack them
         inflow[c, :, :] = np.stack((im_ux[:, 0], im_uy[:, 0]), axis=-1)
 
@@ -114,7 +100,7 @@ def load_prepare_dataset(root_dir):
 resize = A.Compose(
     [
         A.Resize(width=config['data']['final_size'][0], height=config['data']['final_size'][1], interpolation=Image.BICUBIC),
-        # A.Normalize(mean=[0, 0, 0], std=[1, 1, 1]),
+        A.Normalize(mean=[0], std=[1]),
         # A.pytorch.ToTensorV2(),
     ]
 )
