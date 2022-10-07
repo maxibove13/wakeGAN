@@ -24,7 +24,11 @@ from matplotlib import cm, pyplot as plt
 import yaml
 
 # Local modules
-from caffa3dMBRi_gz_21_0009 import caffa3dMBRi_gz
+try:
+    from caffa3dMBRi_gz_21_0009 import caffa3dMBRi_gz
+except:
+    from src.data.caffa3dMBRi_gz_21_0009 import caffa3dMBRi_gz
+
 
 # Load config file
 with open('config.yaml') as file:
@@ -215,6 +219,7 @@ def get_image_from_simulation(case, z, steps, field, comp):
     -------
     image : ndarray(m,n)
         Slice of a single velocity component.
+    limits : 
     grid_x : ndarray(m,n)
     grid_y : ndarray(m,n)
     """

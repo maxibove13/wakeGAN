@@ -16,7 +16,6 @@ from PIL import Image
 import numpy as np
 from torch.utils.data import Dataset
 from torch import from_numpy
-import torchvision
 import yaml
 
 # Load config file
@@ -42,6 +41,8 @@ class WF_Dataset(Dataset):
         root_and_dir = self.root_dir
 
         # Read image
+        tag = img_file.split('n')
+        tag = [t.split('p') for t in tag][1][0]
         image = np.array(cv2.imread(os.path.join(root_and_dir, img_file), cv2.IMREAD_GRAYSCALE))
 
         # Apply transform
@@ -70,7 +71,12 @@ def load_prepare_dataset(root_dir):
     dataset_ux = WF_Dataset(root_dir=os.path.join(root_dir, 'ux')) # Load Ux
     dataset_uy = WF_Dataset(root_dir=os.path.join(root_dir, 'uy')) # Load Uy
     
+    # dataset_ux = wf_dataset_ux[0][0]
+    # dataset_uy = wf_dataset_uy[0][0]
+    print(dataset_ux)
 
+    # print(dataset_ux[0][0].shape)
+    # print(dataset_ux[0][1])
 
     # Define arrays to store inflow velocity and images
     inflow = np.zeros((len(dataset_ux), dataset_ux[0].shape[0], 2))

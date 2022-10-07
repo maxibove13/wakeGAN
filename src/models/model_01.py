@@ -31,7 +31,6 @@ class Embedding(nn.Module):
         return x
 
 class Discriminator(nn.Module):
-    # features_d are the channels that change as we go through the layers of the D
     def __init__(self, channels, features_d, height):
         super(Discriminator, self).__init__()
         self.height = height
@@ -50,8 +49,9 @@ class Discriminator(nn.Module):
             nn.Sigmoid()
         )
 
+    # x is the image, mu is the inflow velocity (condition)
     def forward(self, x, mu):
-        mu = self.linear(mu)
+        mu = self.linear(mu) 
         mu = torch.reshape(mu, (mu.shape[0], self.channels, self.height, self.height))
         x_emb = torch.cat((x, mu), 1)
         x_emb = self.disc(x_emb)

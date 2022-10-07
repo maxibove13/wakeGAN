@@ -52,8 +52,8 @@ def train():
         f" with {torch.cuda.get_device_properties(0).total_memory/1024/1024/1024:.0f} GiB")
 
     # Load and process images, extract inflow velocity 
-    images, inflow = load_prepare_dataset(root_dir)
-    images_test, inflow_test = load_prepare_dataset(root_dir_test)
+    images, inflow, _ = load_prepare_dataset(root_dir)
+    images_test, inflow_test, _ = load_prepare_dataset(root_dir_test)
     n_test_data = len(os.listdir(os.path.join('data', 'preprocessed', 'test', 'ux')))
     print(
         f"\n"
