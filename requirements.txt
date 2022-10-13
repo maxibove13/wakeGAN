@@ -1,5 +1,6 @@
 albumentations
 dvc
+dvc-gdrive
 ipykernel
 jupyter
 matplotlib

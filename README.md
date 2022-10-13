@@ -142,3 +142,19 @@ With this command, dvc creates a file (`*.dvc`) that contains metadata about you
 ```
 git add data/preprocessed/tracked.dvc data/preprocessed/.gitignore
 ```
+
+We can keep track of our data with the actual data being storage in the cloud. We'll use google drive for this:
+
+```
+dvc remote add -d storage gdrive:<gdrive_folder_id> 
+```
+
+Note: `gdrive_folder_id` corresponds to the id that the URL shows when you are in the folder that you would like to store your tracked data.
+
+This configuration lives in `.dvc/config` file
+
+Now, let's push the data to our remote storage:
+
+```
+dvc push
+```
