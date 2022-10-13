@@ -45,12 +45,12 @@ class Inflow():
         ax.set_ylim(0, self.size)
 
         fig.savefig(
-            os.path.join('figures','inflow_wind_profiles.png'),
+            os.path.join('figures', 'reference','inflow_wind_profiles.png'),
             dpi=300,
             bbox_inches='tight'
         )
 
-root_dir = os.path.join('data', 'preprocessed', 'train')
+root_dir = os.path.join('data', 'preprocessed', 'tracked', 'train')
 
 inflow = Inflow(root_dir)
 

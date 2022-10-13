@@ -91,7 +91,7 @@ def plot_metrics(loss_disc_real, loss_disc_fake, loss_real, loss_fake, loss_gen,
         # Save figure
         ax.grid(visible=True)
     # fig.suptitle('Losses and RMSE through epochs')
-    fig.savefig(os.path.join('figures', 'metrics.png'))
+    fig.savefig(os.path.join('figures', 'monitor', 'metrics.png'))
 
 def calc_mse(image_real, image_fake):
     return sum((image_fake-image_real)**2)/SIZE_LINEAR
@@ -199,7 +199,7 @@ def plot_flow_field_comparison(fig_im, grid, image, im_gen, image_test, im_gen_t
 
 
     # Save figure
-    fig_im.savefig(os.path.join('figures', 'image_comparison.png'), dpi=300)
-    fig_err.savefig(os.path.join('figures', 'err_evol.png'), dpi=300)
+    fig_im.savefig(os.path.join('figures', 'monitor', 'image_comparison.png'), dpi=300)
+    fig_err.savefig(os.path.join('figures', 'monitor', 'err_evol.png'), dpi=300)
 
     return fig_im

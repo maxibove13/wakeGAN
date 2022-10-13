@@ -70,13 +70,6 @@ def load_prepare_dataset(root_dir):
     # Load dataset
     dataset_ux = WF_Dataset(root_dir=os.path.join(root_dir, 'ux')) # Load Ux
     dataset_uy = WF_Dataset(root_dir=os.path.join(root_dir, 'uy')) # Load Uy
-    
-    # dataset_ux = wf_dataset_ux[0][0]
-    # dataset_uy = wf_dataset_uy[0][0]
-    print(dataset_ux)
-
-    # print(dataset_ux[0][0].shape)
-    # print(dataset_ux[0][1])
 
     # Define arrays to store inflow velocity and images
     inflow = np.zeros((len(dataset_ux), dataset_ux[0].shape[0], 2))

@@ -26,7 +26,7 @@ from data.utils import load_prepare_dataset, ProcessedDataset
 from models.model_01 import Generator
 from visualization.utils import calc_mse, plot_flow_field_comparison
 
-root_dir = os.path.join('data', 'preprocessed', 'test')
+root_dir = os.path.join('data', 'preprocessed', 'tracked', 'test')
 
 plt.rc('axes', labelsize=16)    # fontsize of the x and y labels
 plt.rc('xtick', labelsize=16)    # fontsize of the tick labels
@@ -53,7 +53,7 @@ def test():
 
     # Load and process images, extract inflow velocity 
     images, inflow = load_prepare_dataset(root_dir)
-    n_test_data = len(os.listdir(os.path.join('data', 'preprocessed', 'test', 'ux')))
+    n_test_data = len(os.listdir(os.path.join('data', 'preprocessed', 'tracked', 'test', 'ux')))
     print(
         f"\n"
         f"Loading testing data with {images.shape[0]} samples\n"
@@ -280,9 +280,9 @@ def test():
         y=0.75)
 
     # Save figures
-    fig_im.savefig(os.path.join('figures', 'image_comparison_test.png'), dpi=300, bbox_inches='tight')
-    fig_err.savefig(os.path.join('figures', 'image_comparison_err_test.png'), dpi=300, bbox_inches='tight')
-    fig_prof.savefig(os.path.join('figures', 'profiles.png'), dpi=300, bbox_inches='tight')
+    fig_im.savefig(os.path.join('figures', 'test', 'image_comparison_test.png'), dpi=300, bbox_inches='tight')
+    fig_err.savefig(os.path.join('figures', 'test', 'image_comparison_err_test.png'), dpi=300, bbox_inches='tight')
+    fig_prof.savefig(os.path.join('figures', 'test', 'profiles.png'), dpi=300, bbox_inches='tight')
 
     print(f"RMSE for testing data: {rmse[0]:.3f}\n")
 

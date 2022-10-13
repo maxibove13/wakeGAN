@@ -22,11 +22,11 @@ import yaml
 
 # Local modules
 from data.utils import load_prepare_dataset, ProcessedDataset
-from models.model_01 import Generator, Discriminator, Embedding, initialize_weights
+from models.model_01 import Generator, Discriminator
 from visualization.utils import plot_metrics, calc_mse, plot_flow_field_comparison
 
-root_dir = os.path.join('data', 'preprocessed', 'train')
-root_dir_test = os.path.join('data', 'preprocessed', 'test')
+root_dir = os.path.join('data', 'preprocessed', 'tracked', 'train')
+root_dir_test = os.path.join('data', 'preprocessed', 'tracked', 'test')
 
 # Load config file
 with open('config.yaml') as file:
@@ -52,9 +52,9 @@ def train():
         f" with {torch.cuda.get_device_properties(0).total_memory/1024/1024/1024:.0f} GiB")
 
     # Load and process images, extract inflow velocity 
-    images, inflow, _ = load_prepare_dataset(root_dir)
-    images_test, inflow_test, _ = load_prepare_dataset(root_dir_test)
-    n_test_data = len(os.listdir(os.path.join('data', 'preprocessed', 'test', 'ux')))
+    images, inflow = load_prepare_dataset(root_dir)
+    images_test, inflow_test = load_prepare_dataset(root_dir_test)
+    n_test_data = len(os.listdir(os.path.join('data', 'preprocessed', 'tracked', 'test', 'ux')))
     print(
         f"\n"
         f"Loading training and validation data with {images.shape[0]} samples ({n_test_data} samples remain for testing, {n_test_data/images.shape[0]*100:.1f}%)\n"

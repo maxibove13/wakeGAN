@@ -25,7 +25,7 @@ models:
 train:
   device: 'cuda:1'
   lr: 1.0e-4
-  num_epochs: 200
+  num_epochs: 10
   batch_size: 64
   multibatch: True
   num_workers: 8 # number of processes that gen batches in parallel

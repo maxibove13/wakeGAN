@@ -1,4 +1,5 @@
 albumentations
+dvc
 ipykernel
 jupyter
 matplotlib
