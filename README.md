@@ -117,6 +117,28 @@ U.shape = [32, 32, 2] (32x32 uniform grid points and two channels)
 
 The inflow wind profiles (\mu) are the ones at the start of each subdomain containing each turbine.
 
-## Issues
+# Versioning data with DVC
 
-## Questions
+Let's track our splited data using [DVC](https://dvc.org/)
+
+First initialize DVC, it behaves similar to git:
+
+```
+dvc init
+```
+
+Note: Check that the data you want to tracked isn't in `.gitignore`
+
+In my case, I'm going to track only the splited data (splited between `train` and `test`) which lives in `data/preprocessed/tracked`
+
+Then, let's add the data we are going to track to dvc staging area: 
+
+```
+dvc add data/preprocessed/tracked/
+```
+
+With this command, dvc creates a file (`*.dvc`) that contains metadata about your tracked data, let's git add it and ignore the folder that contains the tracked data
+
+```
+git add data/preprocessed/tracked.dvc data/preprocessed/.gitignore
+```
