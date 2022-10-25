@@ -18,15 +18,15 @@ models:
   f_g: 64
   f_d: 64
   load: False
-  save: False
+  save: True
   name_gen: 'wake_gan_gen.pth'
   name_disc: 'wake_gan_disc.pth'
 
 train:
   device: 'cuda:1'
   lr: 1.0e-4
-  num_epochs: 10
-  batch_size: 64
+  num_epochs: 100
+  batch_size: 8
   multibatch: True
   num_workers: 8 # number of processes that gen batches in parallel
 

@@ -36,6 +36,11 @@ plt.rc('ytick', labelsize=16)    # fontsize of the tick labels
 with open('config.yaml') as file:
     config = yaml.safe_load(file)
 
+if torch.cuda.device_count() == 1:
+    DEVICE = 'cuda'
+else:
+    DEVICE = 'cuda:1'
+
 CHANNELS = config['data']['channels']
 CLIM_UX = config['data']['figures']['clim_ux']
 CLIM_UY = config['data']['figures']['clim_uy']
@@ -45,7 +50,7 @@ SIZE = config['data']['final_size'][0]
 def test():
 
     # Set device
-    device = torch.device(config['train']['device']) if torch.cuda.is_available() else 'cpu'
+    device = torch.device(DEVICE) if torch.cuda.is_available() else 'cpu'
     print(
         f"\n"
         f"Using device: {torch.cuda.get_device_name()}"
@@ -132,7 +137,7 @@ def test():
         axes_pad=(0.15, 0.70), 
         share_all='False',
         aspect=False,
-        cbar_mode='none')
+        cbar_mode=None)
 
         # Plot figure with images real and fake
     if CHANNELS == 1:

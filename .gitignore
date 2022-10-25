@@ -3,19 +3,20 @@ data/preprocessed/ux
 data/preprocessed/uy
 data/aux/**
 
-models
-
-.venv*
+models/*
 
 figures/monitor/*
 figures/wf_slices
 
-*notes.md
+
+.venv*
 
 *pyc
 *swp
 
 dvc-remote-data*
+*notes.md
 
 # Exceptions
 !figures/monitor/.gitkeep
+!models/.gitkeep
