@@ -124,32 +124,8 @@ def make_dataset_per_prec(prec, key, value, z, clim, plot_wf_slice, wt_xy):
                 # Find corners around WT slice as indices of field slice and plot its limits
                 ids_wt = isolate_wt_slice(wt_xy_sim, wt, axs[comp], grid_x, grid_y, plot=plot_wf_slice)
 
-                # Adjust the indices in order to have the preselected shape
-                a,b,c,d = 0,0,0,0
-                while (ids_wt[3] - ids_wt[2]) > config['data']['shape'][0]:
-                    ids_wt[3] -= 1
-                    a += 1
-                while (ids_wt[3] - ids_wt[2]) < config['data']['shape'][0]:
-                    ids_wt[3] += 1
-                    b += 1
-                while (ids_wt[1] - ids_wt[0]) > config['data']['shape'][0]:
-                    ids_wt[0] += 1
-                    c += 1
-                while (ids_wt[1] - ids_wt[0]) < config['data']['shape'][0]:
-                    ids_wt[1] -= 1
-                    d += 1
-                # If the adjustment required more than 3 pixels is not acceptable
-                assert a <= 3 or b <= 3 or c <= 3 or d <= 3, f"{a},{b},{c},{d}"
-
                 # Crop slice around corners to have one WT image. This is our sample.
                 sample = np.flip(image[ids_wt[2]:ids_wt[3], ids_wt[0]:ids_wt[1]], axis=0)
-                # Check sample is square
-                assert sample.shape[0] == sample.shape[1], f"Samples must be squared. {case}_{wt} shape is {sample.shape}"
-
-                if wt == 0:
-                    first_sample_shape = sample.shape
-                else:
-                    assert first_sample_shape == sample.shape, f"Samples do not have the same shape {first_sample_shape} != {sample.shape}"
 
                 # Save it in gray scales without normalization.
                 if comp == 0:
