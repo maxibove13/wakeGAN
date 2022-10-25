@@ -32,6 +32,11 @@ root_dir_test = os.path.join('data', 'preprocessed', 'tracked', 'test')
 with open('config.yaml') as file:
     config = yaml.safe_load(file)
 
+if torch.cuda.device_count() == 1:
+    DEVICE = 'cuda'
+else:
+    DEVICE = 'cuda:1'
+
 CHANNELS = config['data']['channels']
 NUM_EPOCHS = config['train']['num_epochs']
 CLIM_UX = config['data']['figures']['clim_ux']
@@ -45,7 +50,7 @@ def train():
     print("cDCGAN training:")
 
     # Set device
-    device = torch.device(config['train']['device']) if torch.cuda.is_available() else 'cpu'
+    device = torch.device(DEVICE) if torch.cuda.is_available() else 'cpu'
     print(
         f"\n"
         f"Using device: {torch.cuda.get_device_name()}"

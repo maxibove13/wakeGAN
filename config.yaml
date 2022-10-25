@@ -17,7 +17,7 @@ data:
 models:
   f_g: 64
   f_d: 64
-  load: True
+  load: False
   save: False
   name_gen: 'wake_gan_gen.pth'
   name_disc: 'wake_gan_disc.pth'
