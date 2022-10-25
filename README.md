@@ -5,14 +5,14 @@ conditional generative adversarial network", Energy, [https://doi.org/10.1016/j.
 
 ## Results
 
-![Image comparison test](https://github.com/maxibove13/wakeGAN/blob/main/figures/image_comparison_test.png)
+![Image comparison test](https://github.com/maxibove13/wakeGAN/blob/main/figures/test/image_comparison_test.png)
 
-![Image comparison test](https://github.com/maxibove13/wakeGAN/blob/main/figures/image_comparison_err_test.png)
+![Image comparison test](https://github.com/maxibove13/wakeGAN/blob/main/figures/test/image_comparison_err_test.png)
 
-![Image comparison](https://github.com/maxibove13/wakeGAN/blob/main/figures/image_comparison_ref.png)
+![Image comparison](https://github.com/maxibove13/wakeGAN/blob/main/figures/reference/image_comparison_ref.png)
 
 
-![Loss and RMSE](https://raw.githubusercontent.com/maxibove13/wakeGAN/main/figures/metrics_ref.png)
+![Loss and RMSE](https://raw.githubusercontent.com/maxibove13/wakeGAN/main/figures/reference/metrics_ref.png)
 
 # Repo usage
 
@@ -183,4 +183,5 @@ And go back and forth with:
 ```
 git stash
 git checkout HEAD
+dvc checkout
 ```

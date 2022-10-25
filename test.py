@@ -89,9 +89,10 @@ def test():
     dataset, 
     batch_size=config['train']['batch_size'], 
     pin_memory=True, 
-    num_workers=config['train']['num_workers'])
+    num_workers=config['train']['num_workers'],
+    shuffle=True)
 
-    rmse = [0, 0]
+    rmse = [[], []]
     gen.eval()
     with torch.no_grad():
         for (images, labels) in testloader:
@@ -103,11 +104,10 @@ def test():
             fakes = gen(labels)
             # Iterate over all images in this minibatch
             for (image, fake) in zip(images, fakes):
-                rmse[0] += calc_mse(image[0], fake[0])
-            rmse[0] /= len(images)
-        rmse[0] /= len(testloader)
-        rmse[0] = torch.sqrt(rmse[0]).cpu().detach().numpy()
+                rmse[0].append(calc_mse(image[0], fake[0]))
+        rmse[0] = [torch.sqrt(r).cpu().detach().numpy() for r in rmse[0]]
 
+    rmse[0] = sum(rmse[0])/len(dataset)
 
     fig_im = plt.figure(dpi=300) # fig for flow field comparison
     fig_err = plt.figure(dpi=300) # fig for error comparison
@@ -184,26 +184,29 @@ def test():
         if c == 0:
             ax.set_title("U$^{real}$")
             ax.get_yaxis().set_visible(True)
-            ax.set_ylabel(f"$Ux$ (Case #{c//2 + 1})")
+            ax.set_ylabel(f"$Ux$ (Case #{c//2 + 1})", fontsize=10)
             ax.set_yticks([])
         elif c == 1:
             ax.set_title("U$^{fake}$")
         elif c == 2:
             ax.set_title("U$^{real}$")
             ax.get_yaxis().set_visible(True)
-            ax.set_ylabel(f"$Ux$ (Case #{c//2 + 1})")
+            ax.set_ylabel(f"$Ux$ (Case #{c//2 + 1})", fontsize=10)
             ax.set_yticks([])
         elif c in [4, 6]:
             ax.get_yaxis().set_visible(True)
-            ax.set_ylabel(f"$Ux$ (Case #{c//2 + 1})")
+            ax.set_ylabel(f"$Ux$ (Case #{c//2 + 1})", fontsize=10)
             ax.set_yticks([])
+            ax.set_aspect('equal')
         elif c == 3:
             ax.set_title("U$^{fake}$")
             cb = grid.cbar_axes[0].colorbar(im)
-            cb.set_label("[ms$^{-1}$]", rotation=270, labelpad=10)
+            cb.ax.tick_params(labelsize=10)
+            cb.set_label("[ms$^{-1}$]", rotation=270, labelpad=10, fontsize=10)
         elif c == 7:
             cb = grid.cbar_axes[1].colorbar(im)
-            cb.set_label("[ms$^{-1}$]", rotation=270, labelpad=10)
+            cb.ax.tick_params(labelsize=10)
+            cb.set_label("[ms$^{-1}$]", rotation=270, labelpad=10, fontsize=10)
 
     # error comparison
     for c, (ax, im) in enumerate(zip(grid_err, grid_err_ims)):
@@ -275,13 +278,13 @@ def test():
     # Add suptitle
     fig_im.suptitle(
         f"Flow field comparison\n"
-        f"Average RMSE for testing dataset: ({sqrt(calc_mse(image[0], fake[0])):.3f}, {sqrt(calc_mse(image[1], fake[1])) if CHANNELS == 2 else 0.0:.3f})",
+        f"Average RMSE for testing dataset: ({rmse[0]:.3f}, {sqrt(calc_mse(image[1], fake[1])) if CHANNELS == 2 else 0.0:.3f})",
         y=0.9)
 
     # Add suptitle
     fig_err.suptitle(
         f"Flow field error comparison\n"
-        f"Average RMSE for testing dataset: ({sqrt(calc_mse(image[0], fake[0])):.3f}, {sqrt(calc_mse(image[1], fake[1])) if CHANNELS == 2 else 0.0:.3f})",
+        f"Average RMSE for testing dataset: ({rmse[0]:.3f}, {sqrt(calc_mse(image[1], fake[1])) if CHANNELS == 2 else 0.0:.3f})",
         y=0.75)
 
     # Save figures
