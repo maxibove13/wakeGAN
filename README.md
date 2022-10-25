@@ -159,3 +159,28 @@ Now, let's push the data to our remote storage:
 dvc push
 ```
 
+If you make changes to the data, you can track them with
+
+```
+dvc add <path_to_tracked_data>
+```
+
+Then git add the changes on `*.dvc` file, and commit.
+
+```
+git add <path_to_tracked_data>/*.dvc
+git commit -m 'updating data'
+```
+
+For example, you can recover the last data modification going back one commit
+
+```
+git checkout HEAD^1 <path_to_tracked_data>
+```
+
+And go back and forth with:
+
+```
+git stash
+git checkout HEAD
+```
