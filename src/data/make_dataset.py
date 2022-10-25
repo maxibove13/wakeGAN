@@ -91,7 +91,7 @@ def make_dataset_per_prec(prec, key, value, z, clim, plot_wf_slice, wt_xy):
     clim_uy = clim[1]
 
     # Iterate over field
-    for u in ['U', 'UMean']:
+    for u in config['data']['fields']:
 
         # Initialize figure and subplots
         fig, axs = plt.subplots(2,1, sharex=True)
@@ -106,7 +106,7 @@ def make_dataset_per_prec(prec, key, value, z, clim, plot_wf_slice, wt_xy):
             # Obtain image and grids from simulation
             image, limits, grid_x, grid_y = get_image_from_simulation(case, z, t[prec], u, comp)
 
-            # Create matplotlib image
+            # Create matplotlib image 
             im = axs[comp].imshow(
                 np.flip(image, axis=0), 
                 cmap=cm.coolwarm, 

@@ -5,8 +5,9 @@ data:
   shape: [44, 44]
   z: 90
   regions: [6, 3] # Simulation regions per direction
+  fields: ['UMean']
   figures:
-    plot_wf_slices: True
+    plot_wf_slices: False
     # For visualizing original chaman simulations slices
     clim_ux: [0, 12]
     clim_uy: [-4, 4]
