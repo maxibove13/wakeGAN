@@ -31,13 +31,13 @@ conditional generative adversarial network", Energy, [https://doi.org/10.1016/j.
 ## Train the cDCGAN:
 
 ```
-./src/train.py
+./train.py
 ```
 
 ## Test the cDGAN:
 
 ```
-./src/test.py
+./test.py
 ```
 
 # Data pipeline:
@@ -158,3 +158,4 @@ Now, let's push the data to our remote storage:
 ```
 dvc push
 ```
+

@@ -21,9 +21,9 @@ from torch.utils.data import DataLoader, SubsetRandomSampler
 import yaml
 
 # Local modules
-from data.utils import load_prepare_dataset, ProcessedDataset
-from models.model_01 import Generator, Discriminator
-from visualization.utils import plot_metrics, calc_mse, plot_flow_field_comparison
+from src.data.utils import load_prepare_dataset, ProcessedDataset
+from src.models.model_01 import Generator, Discriminator
+from src.visualization.utils import plot_metrics, calc_mse, plot_flow_field_comparison
 
 root_dir = os.path.join('data', 'preprocessed', 'tracked', 'train')
 root_dir_test = os.path.join('data', 'preprocessed', 'tracked', 'test')

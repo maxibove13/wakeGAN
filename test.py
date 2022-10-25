@@ -22,9 +22,9 @@ from mpl_toolkits.axes_grid1 import ImageGrid
 import yaml
 
 # Local modules
-from data.utils import load_prepare_dataset, ProcessedDataset
-from models.model_01 import Generator
-from visualization.utils import calc_mse, plot_flow_field_comparison
+from src.data.utils import load_prepare_dataset, ProcessedDataset
+from src.models.model_01 import Generator
+from src.visualization.utils import calc_mse
 
 root_dir = os.path.join('data', 'preprocessed', 'tracked', 'test')
 
