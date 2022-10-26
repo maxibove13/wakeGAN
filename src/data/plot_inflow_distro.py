@@ -57,4 +57,4 @@ inflow = Inflow(root_dir)
 
 # plot inflow wind profile
 inflow.unnormalize()
-inflow.plot_wind_profiles(step=60)
+inflow.plot_wind_profiles(step=10)
