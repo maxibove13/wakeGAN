@@ -208,3 +208,5 @@ git config --global merge.ours.driver true
 
 With this changes we can safely move between branches to keep a certain configuration, dataset and figures.
 Remember that on each branch the we keep track of `tracked.dvc` not of the data itself which is store in `gdrive`.
+
+Rebase tu upgrade the feature branch with main changes
