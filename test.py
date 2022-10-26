@@ -223,8 +223,9 @@ def test():
             )
 
         cb = grid_err.cbar_axes[c].colorbar(im)
-        cb.set_label("[ms$^{-1}$]", rotation=270, labelpad=10)
-        ax.set_ylabel("$U_x^{fake} - U_x^{real}$")
+        cb.ax.tick_params(labelsize=10)
+        cb.set_label("[ms$^{-1}$]", rotation=270, labelpad=10, fontsize=10)
+        ax.set_ylabel("$U_x^{fake} - U_x^{real}$", fontsize=10)
         ax.set_yticks([])
         ax.set_title(f"Case #{c+1}")
         ax.get_xaxis().set_visible(False)
