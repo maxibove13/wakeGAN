@@ -185,3 +185,26 @@ git stash
 git checkout HEAD
 dvc checkout
 ```
+
+### branches to track datasets
+
+Each branch represents a different dataset.
+In order to have the changes in `main` in any feature (dataset) branch we need to `git rebase main` on each branch when we make changes in the code (only changes in `main` allowed).
+However, we don't want to obtain the changes made to `tracked.dvc`, `figures/test/*` and `config.yaml`, we use `.gitattributes` for this.
+
+In the root file `.gitattributes` we specify which file pattern we will exclude from the mergin. In this case, we add the following to `.gitattributes`:
+
+```
+data/preprocessed/tracked.dvc merge=ours
+figures/test/* merge=ours
+config.yaml merge=ours
+```
+
+After that modify `.gitconfig`:
+
+```
+git config --global merge.ours.driver true
+```
+
+With this changes we can safely move between branches to keep a certain configuration, dataset and figures.
+Remember that on each branch the we keep track of `tracked.dvc` not of the data itself which is store in `gdrive`.

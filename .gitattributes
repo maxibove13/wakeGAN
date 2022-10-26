@@ -1,0 +1,3 @@
+data/preprocessed/tracked.dvc merge=ours
+figures/test/* merge=ours
+config.yaml merge=ours
