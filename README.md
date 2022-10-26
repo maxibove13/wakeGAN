@@ -172,6 +172,12 @@ git add <path_to_tracked_data>/*.dvc
 git commit -m 'updating data'
 ```
 
+Finally push the modified data to the storage
+
+```
+dvc push
+```
+
 For example, you can recover the last data modification going back one commit
 
 ```
