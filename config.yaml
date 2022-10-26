@@ -1,5 +1,6 @@
 data:
   precs: ['576', '672', '768', '864', '960']
+  turns: ['n7', 'n5', 'n2', 'pr', 'p2', 'p5', 'p7']
   lim_around_wt: [2, 4, 2, 2]
   wt_diam: 126
   shape: [44, 44]

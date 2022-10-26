@@ -72,12 +72,13 @@ def make_dataset(z, plot_wf_slice, wt_xy, clim):
     processes = [] # Create list of processes
     # Iterate over all angles
     for key, value in turns.items():
-        # Define the process
-        p = multiprocessing.Process(target=make_dataset_per_prec, args=[prec, key, value, z, clim, plot_wf_slice, wt_xy])
-        # Start the process
-        p.start()
-        # Append the process to list of processes
-        processes.append(p)
+        if key in config['data']['turns']:
+            # Define the process
+            p = multiprocessing.Process(target=make_dataset_per_prec, args=[prec, key, value, z, clim, plot_wf_slice, wt_xy])
+            # Start the process
+            p.start()
+            # Append the process to list of processes
+            processes.append(p)
 
     # Wait for all processes to finish before moving on
     for process in processes:
