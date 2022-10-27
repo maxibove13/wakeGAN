@@ -65,6 +65,8 @@ def plot_metrics(loss_disc_real, loss_disc_fake, loss_real, loss_fake, loss_gen,
     axs[0].plot(x, loss_disc_fake, label='Discriminator loss (synth)', color='b')
     axs[0].plot(x, loss_gen, label='Generator loss', color='r')
 
+    sec_ax1 = axs[1].secondary_yaxis('right', functions=(lambda x: x/CLIM_UX[1]*100, lambda x: x * CLIM_UX[1]*100))
+
     axs[1].plot(x, rmse_evol_ux_tra, label='RMSE Ux (Training)', color='g', ls='-')
     axs[1].plot(x, rmse_evol_ux_test, label='RMSE Ux (Testing)', color='g', ls='--')
     if KFOLD:
@@ -76,12 +78,13 @@ def plot_metrics(loss_disc_real, loss_disc_fake, loss_real, loss_fake, loss_gen,
     
     axs[1].set(xlabel='epochs')
     axs[0].set(ylabel='loss')
-    axs[1].set(ylabel='RMSE')
+    axs[1].set(ylabel="RMSE [ms$^{-1}$]")
+    sec_ax1.set_ylabel('RMSE [% of range]', rotation=270, labelpad=14)
     
     axs[0].xaxis.set_ticklabels([])
 
     # axs[0].set_ylim(0, 1.6)
-    # axs[1].set_ylim(0, 0.1)
+    axs[1].set_ylim(0, 2)
 
     for i, ax in enumerate(axs):
         if epoch == 0:
@@ -93,8 +96,10 @@ def plot_metrics(loss_disc_real, loss_disc_fake, loss_real, loss_fake, loss_gen,
     # fig.suptitle('Losses and RMSE through epochs')
     fig.savefig(os.path.join('figures', 'monitor', 'metrics.png'))
 
-def calc_mse(image_real, image_fake):
-    return sum((image_fake-image_real)**2)/SIZE_LINEAR
+def calc_mse(real, synth):
+    real = real * (CLIM_UX[1]-CLIM_UX[0]) + CLIM_UX[0]
+    synth = synth * (CLIM_UX[1]-CLIM_UX[0]) + CLIM_UX[0]
+    return sum((synth-real)**2)/SIZE_LINEAR
 
 def plot_flow_field_comparison(fig_im, grid, image, im_gen, image_test, im_gen_test):
     # Plot figure with images real and fake

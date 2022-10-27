@@ -187,7 +187,7 @@ def train():
         for epoch in range(NUM_EPOCHS):
             gen.train()
             # Iterate over mini batches
-            rmse_tra_b = [0, 0]
+            rmse_tra = [[], []]; rmse_test = [[], []]
             for image, inflow in trainloader if MULTIBATCH else [(0,0)]:
 
                 if not MULTIBATCH:
@@ -220,29 +220,22 @@ def train():
                 opt_gen.step() # Update weights
 
                 # Evaluate model on training data
-                mse_tra = [0, 0]
                 for (im_tra, synth_tra) in zip(image, synths):
                     if CHANNELS == 1:
-                        mse_tra[0] += calc_mse(im_tra.detach(), synth_tra.detach())
+                        rmse_tra[0].append(calc_mse(im_tra.detach(), synth_tra.detach()))
                     elif CHANNELS == 2:
-                        mse_tra[0] += calc_mse(im_tra.detach()[0], synth_tra.detach()[0])
-                        mse_tra[1] += calc_mse(im_tra.detach()[1], synth_tra.detach()[1])
-
-                mse_tra[0] /= len(image); rmse_tra_b[0] += mse_tra[0]
-                mse_tra[1] /= len(image); rmse_tra_b[1] += mse_tra[1]
-            
-            if MULTIBATCH:
-                rmse_tra_b[0] /= len(trainloader)
-                rmse_tra_b[1] /= len(trainloader)
+                        rmse_tra[0].append(calc_mse(im_tra.detach()[0], synth_tra.detach()[0]))
+                        rmse_tra[1].append(calc_mse(im_tra.detach()[1], synth_tra.detach()[1]))
 
             # get rmse
-            rmse_tra_b[0] = torch.sqrt(rmse_tra_b[0]).cpu().detach().numpy()
+            rmse_tra[0] = [torch.sqrt(r).cpu().detach().numpy() for r in rmse_tra[0]]
+            rmse_tra[0] = sum(rmse_tra[0])/len(dataset)
             if CHANNELS == 2:
-                rmse_tra_b[1] = torch.sqrt(rmse_tra_b[1]).cpu().detach().numpy()
+                rmse_tra[1] = [torch.sqrt(r).cpu().detach().numpy() for r in rmse_tra[1]]
+                rmse_tra[1] = sum(rmse_tra[1])/len(dataset)
 
             # evaluation of the model on the testing data. This is for tuning hyperparameter to assess the regularization of the model
             gen.eval()
-            rmse_test_b = [0, 0]
             # for each mini batch in testloader if multibatch
             for ims_test, inflow_test in testloader if MULTIBATCH else [(0,0)]:
                 if not MULTIBATCH:
@@ -251,25 +244,20 @@ def train():
                 with torch.no_grad():
                     synths_test = gen(inflow_test.float().to(device))
                     # iterate over all images in this batch
-                    mse_test = [0, 0]
                     for synth_test, im_test in zip(synths_test, ims_test):
                         # calculate mse
                         if CHANNELS == 1:
-                            mse_test[0] += calc_mse(im_test.to(device), synth_test)
+                            rmse_test[0].append(calc_mse(im_test.to(device), synth_test))
                         elif CHANNELS == 2:
-                            mse_test[0] += calc_mse(im_test.to(device)[0], synth_test[0])
-                            mse_test[1] += calc_mse(im_test.to(device)[1], synth_test[1])
-                    mse_test[0] /= len(synths); rmse_test_b[0] += mse_test[0]
-                    mse_test[1] /= len(synths); rmse_test_b[1] += mse_test[1]
-                    
-            if MULTIBATCH:
-                rmse_test_b[0] /= len(testloader)
-                rmse_test_b[1] /= len(testloader)
+                            rmse_test[0].append(calc_mse(im_test.to(device)[0], synth_test[0]))
+                            rmse_test[1].append(calc_mse(im_test.to(device)[1], synth_test[1]))
 
             # get rmse
-            rmse_test_b[0] = torch.sqrt(rmse_test_b[0]).cpu().detach().numpy()
+            rmse_test[0] = [torch.sqrt(r).cpu().detach().numpy() for r in rmse_test[0]]
+            rmse_test[0] = sum(rmse_test[0])/len(dataset_test)
             if CHANNELS == 2:
-                rmse_test_b[1] = torch.sqrt(rmse_test_b[1]).cpu().detach().numpy()
+                rmse_test[1] = [torch.sqrt(r).cpu().detach().numpy() for r in rmse_test[1]]
+                rmse_test[1] = sum(rmse_test[1])/len(dataset_test)
 
             if KFOLD:
                 # Test model on validation data
@@ -303,15 +291,15 @@ def train():
                 print(
                     f"Epoch [{epoch+1:03d}/{NUM_EPOCHS:03d} - "
                     f"Loss D_real: {loss_real:.3f}, Loss D_synth: {loss_synth:.3f}"
-                    f", Loss G: {loss_g:.3f}, RMSE Tra.: ({rmse_tra_b[0]:.3f}, {rmse_tra_b[1]:.3f}),"
+                    f", Loss G: {loss_g:.3f}, RMSE Tra.: ({rmse_tra[0]:.3f}, {rmse_tra[1]:.3f}),"
                     f" RMSE Val.: ({rmse_val[0]:.3f}, {rmse_val[1]:.3f})]"
                     )
             else:
                 print(
                     f"Epoch [{epoch+1:03d}/{NUM_EPOCHS:03d} - "
                     f"Loss D_real: {loss_real:.3f}, Loss D_synth: {loss_synth:.3f}"
-                    f", Loss G: {loss_g:.3f}, RMSE Tra.: ({rmse_tra_b[0]:.3f}, {rmse_tra_b[1]:.3f})"
-                    f", RMSE Test: ({rmse_test_b[0]:.3f}, {rmse_test_b[1]:.3f})"
+                    f", Loss G: {loss_g:.3f}, RMSE Tra.: ({rmse_tra[0]:.3f})"
+                    f", RMSE Test: ({rmse_test[0]:.3f})"
                     )
                         
             if epoch == 0:
@@ -333,7 +321,7 @@ def train():
                 rmse_evol_uy_test = []
 
             # Plot metrics and flow field comparison
-            plot_metrics(loss_disc_real, loss_disc_synth, loss_real, loss_synth, loss_gen, loss_g, epoch, fig, axs, NUM_EPOCHS, rmse_tra_b, rmse_test_b, rmse_val, rmse_evol_ux_tra, rmse_evol_uy_tra, rmse_evol_ux_test, rmse_evol_ux_test,  rmse_evol_ux_val, rmse_evol_uy_val)
+            plot_metrics(loss_disc_real, loss_disc_synth, loss_real, loss_synth, loss_gen, loss_g, epoch, fig, axs, NUM_EPOCHS, rmse_tra, rmse_test, rmse_val, rmse_evol_ux_tra, rmse_evol_uy_tra, rmse_evol_ux_test, rmse_evol_ux_test,  rmse_evol_ux_val, rmse_evol_uy_val)
             if KFOLD:
                 # Plot validation images
                 plot_flow_field_comparison(fig_im, grid, image, im_gen)
