@@ -10,6 +10,8 @@ Limitations:
 - Only trained with streamwise velocity component (Ux) for now
 - It generates only horizontal planes at hub's height (90m)
 
+![Image comparison test](https://github.com/maxibove13/wakeGAN/blob/main/figures/test/image_comparison_test.png)
+
 # Repo usage
 
 ## Pull preprocessed data from remote storage
@@ -87,22 +89,23 @@ Check generated files in `/figures/test`:
             - Evaluate loss, backprop on Disc and Gen
 
 
+# Flowchart of Zhao & Zhang proposed DCGAN
+
+![flowchart](https://github.com/maxibove13/ZZ_DC_CGAN/blob/main/figures/reference/flowchart?raw=true)
+
 ## Results
 
-![Image comparison test](https://github.com/maxibove13/wakeGAN/blob/main/figures/test/image_comparison_test.png)
+### Error between real and synthetic flow field
 
 ![Image comparison test](https://github.com/maxibove13/wakeGAN/blob/main/figures/test/image_comparison_err_test.png)
 
-![Image comparison](https://github.com/maxibove13/wakeGAN/blob/main/figures/reference/image_comparison_ref.png)
+### Real vs. generated Wind profiles at different streamwise positions relative to WT diameter
 
+![Image comparison test](https://github.com/maxibove13/wakeGAN/blob/main/figures/test/profiles.png)
+
+### Adversarial loss and RMSE evolution over epochs
 
 ![Loss and RMSE](https://raw.githubusercontent.com/maxibove13/wakeGAN/main/figures/reference/metrics_ref.png)
-
-
-### Flowchart of the proposed surrogated model
-
-![flowchart](https://github.com/maxibove13/ZZ_DC_CGAN/blob/main/figures/flowchart?raw=true)
-
 
 ## data
 
@@ -112,7 +115,7 @@ Contains the chaman LES simulation outputs of the WF for different precursors an
 Each simulation is composed of 18 regions.
 The data is present through a symbolic link between the actual storage folder and `/data/raw` directory.
 
-## Rnadom comments on the approach
+## Random comments on the approach
 
 Generator takes the parameters \mu as input and outputs the flow field prediction U as the output
 
