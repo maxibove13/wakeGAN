@@ -78,7 +78,7 @@ Check generated files in `/figures/test`:
 2) Horizontal slices at hub's height of mean horizontal velocity (Ux, Uy)
 3) Crop slices into several images around each WT of the WF.
 4) Save them as image files mapped with a certaing vmin and vmax. (vmin, vmax) -> (0, 255)
-5) Read them, convert them to float32, rescale them to (0, 1)
+5) Read them, convert them to float32, rescale them to (-1, 1)
 6) Extract first column of pixels on each channel (inflow velocity)
 7) Transform to tensor
 8) For each fold:
@@ -101,7 +101,7 @@ Check generated files in `/figures/test`:
 
 ### Real vs. generated Wind profiles at different streamwise positions relative to WT diameter
 
-![Image comparison test](https://github.com/maxibove13/wakeGAN/blob/main/figures/test/profiles.png)
+<img src="https://github.com/maxibove13/wakeGAN/blob/main/figures/test/profiles.png" alt="wind profiles" width="500"/>
 
 ### Adversarial loss and RMSE evolution over epochs
 
