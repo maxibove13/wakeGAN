@@ -102,7 +102,7 @@ Check generated files in `/figures/test`:
 ### Real vs. generated Wind profiles at different streamwise positions relative to WT diameter
 
 <p align='center'>
-    <img src="https://github.com/maxibove13/wakeGAN/blob/main/figures/test/profiles.png" alt="wind profiles" width="500"/>
+    <img src="https://github.com/maxibove13/wakeGAN/blob/main/figures/reference/profiles.png" alt="wind profiles" width="500"/>
 </p>
 
 ### Adversarial loss and RMSE evolution over epochs
