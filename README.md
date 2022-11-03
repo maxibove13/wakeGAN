@@ -5,11 +5,6 @@ conditional generative adversarial network", Energy, [https://doi.org/10.1016/j.
 
 # Repo usage
 
-## Generate dataset (only in medusa16 server where the raw data is stored):
-```
-./src/data/make_dataset.py
-```
-
 ## Pull data from remote storage
 
 ### enable use of gdrive service account
@@ -24,13 +19,19 @@ dvc remote modify storage --local gdrive_service_account_json_file_path <credent
 ```
 dvc pull
 ```
+## Generate dataset (only in medusa16 server where the raw data is stored):
 
-
-## Split data between training and testing:
+### extract images from CFD simulations outputs
+```
+./src/data/make_dataset.py
+```
+### Split data between training and testing (only in medusa16):
 
 ```
 ./src/data/split_data.py --ratio 0.9 0.1
 ```
+
+
 
 ## Train the cDCGAN:
 
@@ -43,6 +44,8 @@ dvc pull
 ```
 ./test.py
 ```
+
+
 
 # Data pipeline:
 
