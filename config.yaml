@@ -15,6 +15,9 @@ data:
     lw: 0.3
   final_size: [64, 64]
   channels: 1
+  norm:
+    mean: 0
+    std: 1
 
 models:
   f_g: 64
