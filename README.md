@@ -91,7 +91,7 @@ Check generated files in `/figures/test`:
 
 # Flowchart of Zhao & Zhang proposed DCGAN
 
-![flowchart](https://github.com/maxibove13/ZZ_DC_CGAN/blob/main/figures/reference/flowchart.jpg)
+![flowchart](https://github.com/maxibove13/wakeGAN/blob/main/figures/test/flowchart.jpg)
 
 ## Results
 
