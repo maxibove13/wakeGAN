@@ -23,6 +23,8 @@ with open('config.yaml') as file:
     config = yaml.safe_load(file)
 
 CHANNELS = config['data']['channels']
+MEAN = config['data']['norm']['mean']
+STD = config['data']['norm']['std']
 
 class WF_Dataset(Dataset):
     def __init__(self, root_dir):
@@ -99,7 +101,7 @@ def load_prepare_dataset(root_dir):
 resize = A.Compose(
     [
         A.Resize(width=config['data']['final_size'][0], height=config['data']['final_size'][1], interpolation=Image.BICUBIC),
-        A.Normalize(mean=[0], std=[1]),
+        A.Normalize(mean=[MEAN], std=[STD]),
         # A.pytorch.ToTensorV2(),
     ]
 )

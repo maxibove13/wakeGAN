@@ -28,11 +28,10 @@ CLIM_UX = config['data']['figures']['clim_ux']
 CLIM_UY = config['data']['figures']['clim_uy']
 CHANNELS = config['data']['channels']
 KFOLD = config['validation']['kfold']
+MEAN = config['data']['norm']['mean']
+STD = config['data']['norm']['std']
 
-mean=0
-std=1
-
-unnormalize = T.Normalize((-mean / std), (1.0 / std))
+unnormalize = T.Normalize((-MEAN / STD), (1.0 / STD))
 
 fig_err = plt.figure(dpi=300)
 grid_err = ImageGrid( # Create grid of images

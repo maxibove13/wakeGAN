@@ -3,24 +3,28 @@
 Based on the work by Zhang J, Zhao X, "Wind farm wake modeling based on deep convolutional
 conditional generative adversarial network", Energy, [https://doi.org/10.1016/j.energy.2021.121747](https://doi.org/10.1016/j.energy.2021.121747)
 
-## Results
-
-![Image comparison test](https://github.com/maxibove13/wakeGAN/blob/main/figures/test/image_comparison_test.png)
-
-![Image comparison test](https://github.com/maxibove13/wakeGAN/blob/main/figures/test/image_comparison_err_test.png)
-
-![Image comparison](https://github.com/maxibove13/wakeGAN/blob/main/figures/reference/image_comparison_ref.png)
-
-
-![Loss and RMSE](https://raw.githubusercontent.com/maxibove13/wakeGAN/main/figures/reference/metrics_ref.png)
-
 # Repo usage
 
-## Generate dataset:
-
+## Generate dataset (only in medusa16 server where the raw data is stored):
 ```
 ./src/data/make_dataset.py
 ```
+
+## Pull data from remote storage
+
+### enable use of gdrive service account
+```
+dvc remote modify storage gdrive_use_service_account true
+```
+### add gdrive credentials to dvc remote 
+```
+dvc remote modify storage --local gdrive_service_account_json_file_path <credentials_file_name>.json
+```
+### pull dataset from remote
+```
+dvc pull
+```
+
 
 ## Split data between training and testing:
 
@@ -56,6 +60,17 @@ conditional generative adversarial network", Energy, [https://doi.org/10.1016/j.
             - Pass real, fake and inflows to discriminator
             - Evaluate loss, backprop on Disc and Gen
 
+
+## Results
+
+![Image comparison test](https://github.com/maxibove13/wakeGAN/blob/main/figures/test/image_comparison_test.png)
+
+![Image comparison test](https://github.com/maxibove13/wakeGAN/blob/main/figures/test/image_comparison_err_test.png)
+
+![Image comparison](https://github.com/maxibove13/wakeGAN/blob/main/figures/reference/image_comparison_ref.png)
+
+
+![Loss and RMSE](https://raw.githubusercontent.com/maxibove13/wakeGAN/main/figures/reference/metrics_ref.png)
 
 
 ### Flowchart of the proposed surrogated model
