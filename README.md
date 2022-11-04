@@ -89,9 +89,20 @@ Check generated files in `/figures/test`:
             - Evaluate loss, backprop on Disc and Gen
 
 
-# Flowchart of Zhao & Zhang proposed DCGAN
+# cDCGAN architecture
 
-![flowchart](https://github.com/maxibove13/wakeGAN/blob/main/figures/reference/flowchart.jpg)
+## Generator
+
+<p align='center'>
+    <img src="https://github.com/maxibove13/wakeGAN/blob/main/figures/reference/gen_arch.png" alt="wind profiles" width="500"/>
+</p>
+
+## Discriminator
+
+<p align='center'>
+    <img src="https://github.com/maxibove13/wakeGAN/blob/main/figures/reference/gen_arch.png" alt="wind profiles" width="500"/>
+</p>
+
 
 ## Results
 
