@@ -94,7 +94,7 @@ Check generated files in `/figures/test`:
 ## Generator
 
 <p align='center'>
-    <img src="https://github.com/maxibove13/wakeGAN/blob/main/figures/reference/gen_arch.png" alt="wind profiles" width="500"/>
+    <img src="https://github.com/maxibove13/wakeGAN/blob/main/figures/reference/gen_arch.png" alt="wind profiles" width="800"/>
 </p>
 
 ## Discriminator
