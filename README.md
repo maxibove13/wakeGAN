@@ -100,7 +100,7 @@ Check generated files in `/figures/test`:
 ## Discriminator
 
 <p align='center'>
-    <img src="https://github.com/maxibove13/wakeGAN/blob/main/figures/reference/gen_arch.png" alt="wind profiles" width="500"/>
+    <img src="https://github.com/maxibove13/wakeGAN/blob/main/figures/reference/disc_arch.png" alt="wind profiles" width="500"/>
 </p>
 
 
