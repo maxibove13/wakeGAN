@@ -94,13 +94,13 @@ Check generated files in `/figures/test`:
 ## Generator
 
 <p align='center'>
-    <img src="https://github.com/maxibove13/wakeGAN/blob/main/figures/reference/gen_arch.png" alt="wind profiles" width="800"/>
+    <img src="https://github.com/maxibove13/wakeGAN/blob/main/figures/reference/gen_arch.png" alt="generator" width="800"/>
 </p>
 
 ## Discriminator
 
 <p align='center'>
-    <img src="https://github.com/maxibove13/wakeGAN/blob/main/figures/reference/disc_arch.png" alt="wind profiles" width="800"/>
+    <img src="https://github.com/maxibove13/wakeGAN/blob/main/figures/reference/disc_arch.png" alt="discriminator" width="800"/>
 </p>
 
 
@@ -118,7 +118,9 @@ Check generated files in `/figures/test`:
 
 ### Adversarial loss and RMSE evolution over epochs
 
-![Loss and RMSE](https://raw.githubusercontent.com/maxibove13/wakeGAN/main/figures/reference/metrics_ref.png)
+<p align='center'>
+    <img src="https://raw.githubusercontent.com/maxibove13/wakeGAN/main/figures/reference/metrics_ref.png" alt="loss & rmse" width="500"/>
+</p>
 
 ## data
 
