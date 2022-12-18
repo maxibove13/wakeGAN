@@ -8,6 +8,9 @@ models/*
 figures/monitor/*
 figures/wf_slices
 
+*.log
+
+*.egg-info
 
 .venv*
 

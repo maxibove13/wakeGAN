@@ -3,7 +3,7 @@ data:
   turns: ['n7', 'n5', 'n2', 'pr', 'p2', 'p5', 'p7']
   lim_around_wt: [2, 4, 2, 2]
   wt_diam: 126
-  shape: [44, 44]
+  original_size: [44, 44]
   z: 90
   regions: [6, 3] # Simulation regions per direction
   fields: ['UMean']
@@ -13,11 +13,12 @@ data:
     clim_ux: [0, 12]
     clim_uy: [-4, 4]
     lw: 0.3
-  final_size: [64, 64]
+  size: [64, 64]
   channels: 1
-  norm:
-    mean: 0
-    std: 1
+  normalization:
+    type: 'min_max' # 'min_max' or 'z_score'
+    z_score: [null, null] # if null: mean, std of dataset
+    range: [-1, 1]
 
 models:
   f_g: 64

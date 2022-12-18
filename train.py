@@ -48,13 +48,14 @@ MULTIBATCH = config['train']['multibatch']
 def train():
 
     print("cDCGAN training:")
-
+    
     # Set device
     device = torch.device(DEVICE) if torch.cuda.is_available() else 'cpu'
     print(
         f"\n"
         f"Using device: {torch.cuda.get_device_name()}"
-        f" with {torch.cuda.get_device_properties(0).total_memory/1024/1024/1024:.0f} GiB")
+        f" with {torch.cuda.get_device_properties(0).total_memory/1024/1024/1024:.0f} GiB"
+        )
 
     # Load and process images, extract inflow velocity 
     images, inflow = load_prepare_dataset(root_dir)
