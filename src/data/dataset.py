@@ -23,6 +23,7 @@ class WakeGANDataset:
         self.channels = config["channels"]
         self.original_size = config["original_size"]
         self.size = config["size"]
+        self.clim = [config["figures"]["clim_ux"]]
 
         self.norm_type = config["normalization"]["type"]
         self.range = config["normalization"]["range"]
@@ -35,6 +36,7 @@ class WakeGANDataset:
         if self.channels == 2:
             self.data_subdir.append(os.path.join(data_dir, "uy"))
             self.images_fns.append(list(os.listdir(self.data_subdir[1])))
+            self.clim.append(config["figures"]["clim_uy"])
 
         self.mean, self.std, self.min, self.max = self._calculate_statistics()
 
@@ -135,6 +137,9 @@ class WakeGANDataset:
         return torch.utils.data.DataLoader(
             self, batch_size=batch_size, num_workers=num_workers, shuffle=True
         )
+
+    def rescale_back_to_velocity(self, tensor: torch.Tensor) -> torch.Tensor:
+        return tensor * (self.clim[0][1] - self.clim[0][0]) + self.clim[0][0]
 
     @staticmethod
     def _rescale_to_range(

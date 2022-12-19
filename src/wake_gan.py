@@ -17,6 +17,7 @@ from src.data.dataset import WakeGANDataset
 from src.utils.logger import logger
 from src.models import dcgan
 from src.visualization import plots
+from src.utils import utils
 
 
 class WakeGAN:
@@ -47,18 +48,20 @@ class WakeGAN:
         self.feat_disc = config["models"]["f_d"]
 
     def set_device(self) -> None:
-        if torch.cuda.is_available():
+
+        if not torch.cuda.is_available():
             self.device = "cpu"
+            device_name = "CPU"
         else:
             if torch.cuda.device_count() == 1:
                 self.device = torch.device("cuda")
             else:
                 self.device = torch.device(self.device_name)
+            device_name = torch.cuda.get_device_name()
 
         logger.info(
-            f"\n"
-            f"Using device: {torch.cuda.get_device_name()}"
-            f" with {torch.cuda.get_device_properties(0).total_memory/1024/1024/1024:.0f} GiB"
+            f"Using device: {device_name}"
+            f" with {torch.cuda.get_device_properties(0).total_memory/1024/1024/1024:.0f} GiB\n"
         )
 
     def preprocess_dataset(self) -> None:
@@ -108,9 +111,9 @@ class WakeGAN:
         )
 
         logger.info(
-            f"Using {self.criterion} loss function\n"
-            f"Using Adam optimizer for generator with learning rate: {self.lr} and betas {self.betas}\n"
-            f"Using Adam optimizer for discriminator with learning rate: {self.lr} and betas: {self.betas}\n"
+            f"Using {self.criterion}\n"
+            f"Using Adam optimizer for generator with lr: {self.lr} and betas {self.betas}\n"
+            f"Using Adam optimizer for discriminator with lr: {self.lr} and betas: {self.betas}\n"
         )
 
     def load_pretrained_models(self) -> None:
@@ -124,8 +127,12 @@ class WakeGAN:
         )
 
     def train(self):
+
         self.generator.train()
         self.discriminator.train()
+
+        self.generator.running_loss = 0
+        self.discriminator.running_loss = 0
 
         dataloader = {
             "train": self.dataset["train"].get_dataloader(
@@ -136,18 +143,61 @@ class WakeGAN:
             ),
         }
 
+        logger.info(
+            f"Training set samples: {len(self.dataset['train'])}\n"
+            f"Testing set samples: {len(self.dataset['dev'])}\n"
+            f"Number of epochs: {self.epochs}\n"
+            f"Mini batch size: {self.minibatch_size}\n"
+            f"Number of training batches: {len(dataloader['train'])}\n"
+        )
+
+        self._training_loop(dataloader)
+
+    def _training_loop(self, dataloader: Dict):
         for epoch in range(self.epochs):
-            logger.info(f"Epoch {epoch + 1}/{self.epochs}")
+            running_mse = 0
             for c, (images, inflows) in enumerate(dataloader["train"]):
                 images = images.float().to(self.device)
                 inflows = inflows.float().to(self.device)
                 synths = self.generator(inflows)
 
-                self.train_discriminator(inflows, images, synths)
-                self.train_generator(synths, inflows)
-                logger.info(f"     {c}")
+                self._train_discriminator(inflows, images, synths)
+                self._train_generator(synths, inflows)
 
-    def train_discriminator(self, inflows, images, synths):
+                running_mse += self._calculate_batch_mse(images, synths)
+
+            self.discriminator.loss.append(
+                self.discriminator.running_loss / len(dataloader["train"])
+            )
+            self.generator.loss.append(
+                self.generator.running_loss / len(dataloader["train"])
+            )
+
+            mse = running_mse / len(dataloader["train"])
+            rmse = torch.sqrt(mse)
+
+            logger.info(
+                f"{epoch + 1:03d}/{self.epochs}, "
+                f"loss disc: {self.discriminator.loss[-1]:.2f}, "
+                f"loss gen: {self.generator.loss[-1]:.2f}, "
+                f"rmse: {rmse:.2f}, "
+            )
+
+    # def _evaluate_model()
+
+    def _calculate_batch_mse(self, images, synths):
+        for (img, synth) in zip(images.detach(), synths.detach()):
+            img = self.dataset["train"].unnormalize_image(img)
+            synth = self.dataset["train"].unnormalize_image(synth)
+
+            img = self.dataset["train"].rescale_back_to_velocity(img)
+            synth = self.dataset["train"].rescale_back_to_velocity(synth)
+
+            mse = utils.calculate_mse(img, synth, np.prod(self.size))
+        mse /= len(images)
+        return mse
+
+    def _train_discriminator(self, inflows, images, synths) -> float:
         """Train Discriminator: max log(D(x)) + log(1 - D(G(z)))"""
 
         pred_real = self.discriminator(images, inflows)
@@ -162,7 +212,9 @@ class WakeGAN:
         loss.backward(retain_graph=True)
         self.optimizer["discriminator"].step()
 
-    def train_generator(self, synths, inflows):
+        self.discriminator.running_loss += loss.item()
+
+    def _train_generator(self, synths, inflows) -> float:
         """Train Generator: min log(1 - D(G(z))) <-> max log(D(G(z))"""
 
         pred_synth = self.discriminator(synths, inflows)
@@ -173,17 +225,13 @@ class WakeGAN:
         loss.backward()
         self.optimizer["generator"].step()
 
-    def evaluate_model():
-        ...
+        self.generator.running_loss += loss.item()
 
     def plot_monitor_figures():
         ...
 
     def save_models():
         ...
-
-    def rescale_back_to_velocity(self, tensor: torch.Tensor) -> torch.Tensor:
-        return tensor * (self.clim_ux[1] - self.clim_ux[0]) + self.clim_ux[0]
 
     def _load_model(
         self, model: torch.nn.Module, name: str, optimizer: torch.optim.Optimizer

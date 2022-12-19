@@ -8,7 +8,6 @@ __email__ = "maxibove13@gmail.com"
 __status__ = "Development"
 __date__ = "12/22"
 
-import os
 import time
 
 import yaml

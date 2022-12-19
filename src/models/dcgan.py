@@ -17,6 +17,7 @@ class Discriminator(torch.nn.Module):
     def __init__(self, channels, features_d, height):
         super(Discriminator, self).__init__()
         self.height = height
+        self.loss = []
         self.channels = channels
         self.linear = torch.nn.Linear(height, height**2)
         self.disc = torch.nn.Sequential(
@@ -45,6 +46,7 @@ class Generator(torch.nn.Module):
     def __init__(self, channels, height, features_g):
         super(Generator, self).__init__()
         self.height = height
+        self.loss = []
         self.channels = channels
         self.linear = torch.nn.Linear(height, height * 64 // channels)
         self.gen = torch.nn.Sequential(
