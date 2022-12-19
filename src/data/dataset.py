@@ -26,8 +26,8 @@ class WakeGANDataset:
 
         self.norm_type = config["normalization"]["type"]
         self.range = config["normalization"]["range"]
-        self.user_mean = config["normalization"]["z_score"][0]
-        self.user_std = config["normalization"]["z_score"][1]
+        self.user_mean = config["normalization"]["mean_std"][0]
+        self.user_std = config["normalization"]["mean_std"][1]
 
         self.images_fns = []
         self.images_fns += [list(os.listdir(self.data_subdir[0]))]
@@ -38,18 +38,7 @@ class WakeGANDataset:
 
         self.mean, self.std, self.min, self.max = self._calculate_statistics()
 
-        if not norm_params:
-            if self.norm_type == "min_max":
-                self.norm_params = {"min": self.min, "max": self.max}
-            elif self.norm_type == "z_score":
-                self.norm_params = {
-                    "mean": self.user_mean if self.user_mean else self.mean,
-                    "std": self.user_std if self.user_std else self.std,
-                }
-            else:
-                raise ValueError(f"Normalization type {self.norm_type} not supported")
-        else:
-            self.norm_params = norm_params
+        self.norm_params = self._set_norm_params(norm_params)
 
         self.transforms = transforms.Compose(
             [
@@ -110,6 +99,20 @@ class WakeGANDataset:
             image = io.read_image(path=img_path, mode=io.ImageReadMode.GRAY)
         return image
 
+    def _set_norm_params(self, norm_params):
+        if not norm_params:
+            if self.norm_type == "min_max":
+                norm_params = {"min": self.min, "max": self.max}
+            elif self.norm_type == "z_score":
+                norm_params = {
+                    "mean": self.user_mean if self.user_mean else self.mean,
+                    "std": self.user_std if self.user_std else self.std,
+                }
+            else:
+                raise ValueError(f"Normalization type {self.norm_type} not supported")
+
+        return norm_params
+
     def _calculate_statistics(self):
         images = torch.zeros(
             (len(self), self.channels, self.original_size[0], self.original_size[1])
@@ -126,6 +129,11 @@ class WakeGANDataset:
             torch.std(images),
             torch.min(images),
             torch.max(images),
+        )
+
+    def get_dataloader(self, batch_size: int, num_workers: int):
+        return torch.utils.data.DataLoader(
+            self, batch_size=batch_size, num_workers=num_workers, shuffle=True
         )
 
     @staticmethod

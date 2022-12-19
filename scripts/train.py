@@ -8,6 +8,7 @@ __email__ = "maxibove13@gmail.com"
 __status__ = "Development"
 __date__ = "12/22"
 
+import os
 import time
 
 import yaml
@@ -25,9 +26,14 @@ def main():
     wakegan.set_device()
     wakegan.preprocess_dataset()
     wakegan.initialize_models()
+    wakegan.define_loss_and_optimizer()
+    if wakegan.load:
+        wakegan.load_pretrained_models()
+    wakegan.train()
 
 
 if __name__ == "__main__":
+
     tic = time.time()
     main()
     toc = time.time()
