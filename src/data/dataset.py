@@ -6,17 +6,19 @@ __status__ = "Development"
 __date__ = "12/22"
 
 import os
-from typing import Dict, List
+from typing import Dict, Tuple
 
-import numpy as np
 import torch
 from torchvision import transforms
 from torchvision import io
 
 
 class WakeGANDataset:
-    def __init__(self, data_dir: str, config: Dict):
+    def __init__(
+        self, data_dir: str, config: Dict, dataset_type: str, norm_params: Dict = None
+    ):
 
+        self.type = dataset_type
         self.data_subdir = [os.path.join(data_dir, "ux")]
         self.channels = config["channels"]
         self.original_size = config["original_size"]
@@ -36,6 +38,19 @@ class WakeGANDataset:
 
         self.mean, self.std, self.min, self.max = self._calculate_statistics()
 
+        if not norm_params:
+            if self.norm_type == "min_max":
+                self.norm_params = {"min": self.min, "max": self.max}
+            elif self.norm_type == "z_score":
+                self.norm_params = {
+                    "mean": self.user_mean if self.user_mean else self.mean,
+                    "std": self.user_std if self.user_std else self.std,
+                }
+            else:
+                raise ValueError(f"Normalization type {self.norm_type} not supported")
+        else:
+            self.norm_params = norm_params
+
         self.transforms = transforms.Compose(
             [
                 transforms.ConvertImageDtype(torch.float),
@@ -44,7 +59,7 @@ class WakeGANDataset:
             ]
         )
 
-    def __getitem__(self, idx: int) -> (torch.Tensor, torch.Tensor):
+    def __getitem__(self, idx: int) -> tuple((torch.Tensor, torch.Tensor)):
 
         image = self._cat_grayscale_images_as_channels(idx)
         image = self.transforms(image)
@@ -59,11 +74,11 @@ class WakeGANDataset:
     def unnormalize_image(self, image: torch.Tensor):
         if self.norm_type == "min_max":
             image = self._rescale_back_to_original_range(
-                image, self.range, self.max, self.min
+                image, self.range, self.norm_params["max"], self.norm_params["min"]
             )
         elif self.norm_type == "z_score":
-            mean = self.user_mean if self.user_mean else self.mean
-            std = self.user_std if self.user_std else self.std
+            mean = self.norm_params["mean"]
+            std = self.norm_params["std"]
             unnormalize = transforms.Normalize((-mean / std), (1.0 / std))
             image = unnormalize(image)
         else:
@@ -73,11 +88,13 @@ class WakeGANDataset:
 
     def _normalize_image(self, image: torch.Tensor):
         if self.norm_type == "min_max":
-            image = self._rescale_to_range(image, self.range, self.max, self.min)
+            image = self._rescale_to_range(
+                image, self.range, self.norm_params["max"], self.norm_params["min"]
+            )
         elif self.norm_type == "z_score":
-            mean = self.user_mean if self.user_mean else self.mean
-            std = self.user_std if self.user_std else self.std
-            normalize_z_score = transforms.Normalize(mean, std)
+            normalize_z_score = transforms.Normalize(
+                self.norm_params["mean"], self.norm_params["std"]
+            )
             image = normalize_z_score(image)
         else:
             raise ValueError(f"Normalization type {self.norm_type} not supported")

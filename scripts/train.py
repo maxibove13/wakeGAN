@@ -10,21 +10,21 @@ __date__ = "12/22"
 
 import time
 
-import yaml 
+import yaml
 
 from src.wake_gan import WakeGAN
 from src.utils.logger import logger
 
 
-
 def main():
-    with open('config.yaml') as file:
+    with open("config.yaml") as file:
         config = yaml.safe_load(file)
 
     wakegan = WakeGAN(config)
 
     wakegan.set_device()
     wakegan.preprocess_dataset()
+    wakegan.initialize_models()
 
 
 if __name__ == "__main__":

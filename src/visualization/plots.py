@@ -15,7 +15,9 @@ from src.data.dataset import WakeGANDataset
 
 
 def plot_histogram(dataset: WakeGANDataset):
-    """Plot histogram of an image dataset (normalize and unnormalized) in order to see the distribution of pixel values"""
+    """
+    Plot histogram of an image dataset (normalize and unnormalized) in order to see the distribution of pixel values
+    """
 
     images_unnorm = torch.zeros(
         (len(dataset), dataset.channels, dataset.size[0], dataset.size[1])
@@ -49,7 +51,11 @@ def plot_histogram(dataset: WakeGANDataset):
         if c == 0:
             axs[c].set_ylabel("Probability density")
 
-        figname = "hist_pixel_values.png"
+        figname = (
+            "hist_pixel_values_train_set.png"
+            if dataset.type == "train"
+            else "hist_pixel_values_dev_set.png"
+        )
 
     norm_type = (
         f"to {dataset.range} range"

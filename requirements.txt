@@ -15,4 +15,5 @@ setuptools
 scipy
 scikit-learn
 split-folders
+torchsummary
 ypstruct
