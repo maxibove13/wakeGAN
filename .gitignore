@@ -8,11 +8,13 @@ models/*
 figures/monitor/*
 figures/wf_slices
 
+*.log
 
+*.egg-info
 .venv*
-
 *pyc
 *swp
+.vscode
 
 dvc-remote-data*
 *notes.md

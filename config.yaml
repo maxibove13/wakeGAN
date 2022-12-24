@@ -3,7 +3,7 @@ data:
   turns: ['n7', 'n5', 'n2', 'pr', 'p2', 'p5', 'p7']
   lim_around_wt: [2, 4, 2, 2]
   wt_diam: 126
-  shape: [44, 44]
+  original_size: [44, 44]
   z: 90
   regions: [6, 3] # Simulation regions per direction
   fields: ['UMean']
@@ -13,17 +13,19 @@ data:
     clim_ux: [0, 12]
     clim_uy: [-4, 4]
     lw: 0.3
-  final_size: [64, 64]
+  size: [64, 64]
   channels: 1
-  norm:
-    mean: 0
-    std: 1
+  normalization:
+    type: 'min_max' # 'min_max' or 'z_score'
+    mean_std: [null, null] # if null: mean, std of dataset
+    range: [-1, 1]
 
 models:
   f_g: 64
   f_d: 64
   load: False
   save: True
+  save_every: 100
   name_gen: 'wake_gan_gen.pth'
   name_disc: 'wake_gan_disc.pth'
 
@@ -31,7 +33,7 @@ train:
   device: 'cuda:1'
   lr: 1.0e-4
   num_epochs: 100
-  batch_size: 8
+  batch_size: 16
   multibatch: True
   num_workers: 8 # number of processes that gen batches in parallel
 

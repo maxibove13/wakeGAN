@@ -20,30 +20,52 @@ import torchvision.transforms as T
 import yaml
 
 # Load config file
-with open('config.yaml') as file:
+with open("config.yaml") as file:
     config = yaml.safe_load(file)
 
-SIZE_LINEAR = config['data']['final_size'][0]*config['data']['final_size'][1]
-CLIM_UX = config['data']['figures']['clim_ux']
-CLIM_UY = config['data']['figures']['clim_uy']
-CHANNELS = config['data']['channels']
-KFOLD = config['validation']['kfold']
-MEAN = config['data']['norm']['mean']
-STD = config['data']['norm']['std']
+SIZE_LINEAR = config["data"]["final_size"][0] * config["data"]["final_size"][1]
+CLIM_UX = config["data"]["figures"]["clim_ux"]
+CLIM_UY = config["data"]["figures"]["clim_uy"]
+CHANNELS = config["data"]["channels"]
+KFOLD = config["validation"]["kfold"]
+MEAN = config["data"]["norm"]["mean"]
+STD = config["data"]["norm"]["std"]
 
 unnormalize = T.Normalize((-MEAN / STD), (1.0 / STD))
 
 fig_err = plt.figure(dpi=300)
-grid_err = ImageGrid( # Create grid of images
+grid_err = ImageGrid(  # Create grid of images
     fig_err,
-    111, 
-    nrows_ncols=(2,1), 
-    axes_pad=0.15, 
-    share_all='True', 
-    cbar_location='right', 
-    cbar_mode='edge')
+    111,
+    nrows_ncols=(2, 1),
+    axes_pad=0.15,
+    share_all="True",
+    cbar_location="right",
+    cbar_mode="edge",
+)
 
-def plot_metrics(loss_disc_real, loss_disc_fake, loss_real, loss_fake, loss_gen, loss_g, epoch, fig, axs, NUM_EPOCHS, rmse_tra, rmse_test, rmse_val, rmse_evol_ux_tra, rmse_evol_uy_tra, rmse_evol_ux_test, rmse_evol_uy_test, rmse_evol_ux_val, rmse_evol_uy_val):
+
+def plot_metrics(
+    loss_disc_real,
+    loss_disc_fake,
+    loss_real,
+    loss_fake,
+    loss_gen,
+    loss_g,
+    epoch,
+    fig,
+    axs,
+    NUM_EPOCHS,
+    rmse_tra,
+    rmse_test,
+    rmse_val,
+    rmse_evol_ux_tra,
+    rmse_evol_uy_tra,
+    rmse_evol_ux_test,
+    rmse_evol_uy_test,
+    rmse_evol_ux_val,
+    rmse_evol_uy_val,
+):
     # Append current epoch loss to list of losses
     loss_disc_real.append(float(loss_real.detach().cpu()))
     loss_disc_fake.append(float(loss_fake.detach().cpu()))
@@ -58,28 +80,35 @@ def plot_metrics(loss_disc_real, loss_disc_fake, loss_real, loss_fake, loss_gen,
         if KFOLD:
             rmse_evol_uy_val.append(float(rmse_val[1]))
     # Plot loss
-    x = np.arange(0, epoch+1)
+    x = np.arange(0, epoch + 1)
 
-    axs[0].plot(x, loss_disc_real, label='Discriminator loss (real)', color='k')
-    axs[0].plot(x, loss_disc_fake, label='Discriminator loss (synth)', color='b')
-    axs[0].plot(x, loss_gen, label='Generator loss', color='r')
+    axs[0].plot(x, loss_disc_real, label="Discriminator loss (real)", color="k")
+    axs[0].plot(x, loss_disc_fake, label="Discriminator loss (synth)", color="b")
+    axs[0].plot(x, loss_gen, label="Generator loss", color="r")
 
-    sec_ax1 = axs[1].secondary_yaxis('right', functions=(lambda x: x/CLIM_UX[1]*100, lambda x: x * CLIM_UX[1]*100))
+    sec_ax1 = axs[1].secondary_yaxis(
+        "right",
+        functions=(lambda x: x / CLIM_UX[1] * 100, lambda x: x * CLIM_UX[1] * 100),
+    )
 
-    axs[1].plot(x, rmse_evol_ux_tra, label='RMSE Ux (Training)', color='g', ls='-')
-    axs[1].plot(x, rmse_evol_ux_test, label='RMSE Ux (Testing)', color='g', ls='--')
+    axs[1].plot(x, rmse_evol_ux_tra, label="RMSE Ux (Training)", color="g", ls="-")
+    axs[1].plot(x, rmse_evol_ux_test, label="RMSE Ux (Testing)", color="g", ls="--")
     if KFOLD:
-        axs[1].plot(x, rmse_evol_ux_val, label='RMSE Ux (Validation)', color='g', ls='-')
+        axs[1].plot(
+            x, rmse_evol_ux_val, label="RMSE Ux (Validation)", color="g", ls="-"
+        )
     if CHANNELS > 1:
-        axs[1].plot(x, rmse_evol_uy_tra, label='RMSE Uy (Training)', color='y', ls='--')
+        axs[1].plot(x, rmse_evol_uy_tra, label="RMSE Uy (Training)", color="y", ls="--")
         if KFOLD:
-            axs[1].plot(x, rmse_evol_uy_val, label='RMSE Uy (Validation)', color='y', ls='-')
-    
-    axs[1].set(xlabel='epochs')
-    axs[0].set(ylabel='loss')
+            axs[1].plot(
+                x, rmse_evol_uy_val, label="RMSE Uy (Validation)", color="y", ls="-"
+            )
+
+    axs[1].set(xlabel="epochs")
+    axs[0].set(ylabel="loss")
     axs[1].set(ylabel="RMSE [ms$^{-1}$]")
-    sec_ax1.set_ylabel('RMSE [% of range]', rotation=270, labelpad=14)
-    
+    sec_ax1.set_ylabel("RMSE [% of range]", rotation=270, labelpad=14)
+
     axs[0].xaxis.set_ticklabels([])
 
     # axs[0].set_ylim(0, 1.6)
@@ -87,43 +116,52 @@ def plot_metrics(loss_disc_real, loss_disc_fake, loss_real, loss_fake, loss_gen,
 
     for i, ax in enumerate(axs):
         if epoch == 0:
-            ax.set_xlim(1, NUM_EPOCHS-1)
-            ax.legend(loc='upper right' if i == 1 else 'lower right', fontsize='x-small')
+            ax.set_xlim(1, NUM_EPOCHS - 1)
+            ax.legend(
+                loc="upper right" if i == 1 else "lower right", fontsize="x-small"
+            )
             ax.xaxis.set_major_locator(MaxNLocator(integer=True))
         # Save figure
         ax.grid(visible=True)
     # fig.suptitle('Losses and RMSE through epochs')
-    fig.savefig(os.path.join('figures', 'monitor', 'metrics.png'))
+    fig.savefig(os.path.join("figures", "monitor", "metrics.png"))
+
 
 def calc_mse(real, synth):
-    real = real * (CLIM_UX[1]-CLIM_UX[0]) + CLIM_UX[0]
-    synth = synth * (CLIM_UX[1]-CLIM_UX[0]) + CLIM_UX[0]
-    return sum((synth-real)**2)/SIZE_LINEAR
+    real = real * (CLIM_UX[1] - CLIM_UX[0]) + CLIM_UX[0]
+    synth = synth * (CLIM_UX[1] - CLIM_UX[0]) + CLIM_UX[0]
+    return sum((synth - real) ** 2) / SIZE_LINEAR
+
 
 def plot_flow_field_comparison(fig_im, grid, image, im_gen, image_test, im_gen_test):
     # Plot figure with images real and fake
     if CHANNELS == 1:
-        grid_ims = [image, im_gen, im_gen-image,
-                    image_test, im_gen_test,im_gen_test - image_test
-                    ]
+        grid_ims = [
+            image,
+            im_gen,
+            im_gen - image,
+            image_test,
+            im_gen_test,
+            im_gen_test - image_test,
+        ]
     else:
-        grid_ims = [image, im_gen, im_gen-image,image, im_gen, im_gen-image]
-    grid_im_err = [im_gen-image, im_gen_test - image_test]
+        grid_ims = [image, im_gen, im_gen - image, image, im_gen, im_gen - image]
+    grid_im_err = [im_gen - image, im_gen_test - image_test]
 
     # Iterate over images in grid
     for c, (ax, im) in enumerate(zip(grid, grid_ims)):
-        
+
         # unnormalize
         if c <= 3:
             im = unnormalize(im)
         # remove extra dimension (channels, 1)
         im = im[0]
 
-
         # Determine the image vmin and vmax
         # if c < 3:
-        im = im * (CLIM_UX[1]-CLIM_UX[0]) + CLIM_UX[0]
-        vmin = CLIM_UX[0]; vmax = CLIM_UX[1]
+        im = im * (CLIM_UX[1] - CLIM_UX[0]) + CLIM_UX[0]
+        vmin = CLIM_UX[0]
+        vmax = CLIM_UX[1]
         # else:
         #     im = im * (CLIM_UY[1]-CLIM_UY[0]) + CLIM_UY[0]
         #     vmin = CLIM_UY[0]; vmax = CLIM_UY[1]
@@ -131,9 +169,11 @@ def plot_flow_field_comparison(fig_im, grid, image, im_gen, image_test, im_gen_t
         # Create image
         im = ax.imshow(
             im.detach().cpu(),
-            cmap=cm.coolwarm, 
-            interpolation='none',
-            vmin=vmin, vmax=vmax)
+            cmap=cm.coolwarm,
+            interpolation="none",
+            vmin=vmin,
+            vmax=vmax,
+        )
 
         # Hide the axis
         ax.get_xaxis().set_visible(False)
@@ -153,7 +193,7 @@ def plot_flow_field_comparison(fig_im, grid, image, im_gen, image_test, im_gen_t
             cb.set_label("[ms$^{-1}$]", rotation=270, labelpad=10)
         elif c == 3:
             ax.get_yaxis().set_visible(True)
-            ax.set_ylabel("Validation sample")
+            ax.set_ylabel("dev sample")
             ax.set_yticks([])
         elif c == 5:
             cb = grid.cbar_axes[1].colorbar(im)
@@ -166,24 +206,22 @@ def plot_flow_field_comparison(fig_im, grid, image, im_gen, image_test, im_gen_t
     #     )
 
     for c, (ax, im, cax) in enumerate(zip(grid_err, grid_im_err, grid_err.cbar_axes)):
-        
+
         # unnormalize
         if c == 0:
             im = unnormalize(im)
         # remove extra dimension (channels, 1)
         im = im[0]
 
-
         # Determine the image vmin and vmax
-        im = im * (CLIM_UX[1]-CLIM_UX[0]) + CLIM_UX[0]
-        vmin = CLIM_UX[0]; vmax = CLIM_UX[1]
+        im = im * (CLIM_UX[1] - CLIM_UX[0]) + CLIM_UX[0]
+        vmin = CLIM_UX[0]
+        vmax = CLIM_UX[1]
 
         # Create image
         im_plt = ax.imshow(
-            im.detach().cpu(),
-            cmap=cm.coolwarm, 
-            interpolation='none',
-            vmin=-1, vmax=1)
+            im.detach().cpu(), cmap=cm.coolwarm, interpolation="none", vmin=-1, vmax=1
+        )
 
         # Hide the axis
         ax.get_xaxis().set_visible(False)
@@ -201,9 +239,8 @@ def plot_flow_field_comparison(fig_im, grid, image, im_gen, image_test, im_gen_t
         cbar = cax.colorbar(im_plt)
         cbar.set_label("[ms$^{-1}$]", rotation=270, labelpad=10)
 
-
     # Save figure
-    fig_im.savefig(os.path.join('figures', 'monitor', 'image_comparison.png'), dpi=300)
-    fig_err.savefig(os.path.join('figures', 'monitor', 'err_evol.png'), dpi=300)
+    fig_im.savefig(os.path.join("figures", "monitor", "image_comparison.png"), dpi=300)
+    fig_err.savefig(os.path.join("figures", "monitor", "err_evol.png"), dpi=300)
 
     return fig_im
