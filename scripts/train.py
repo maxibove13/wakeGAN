@@ -8,19 +8,29 @@ __email__ = "maxibove13@gmail.com"
 __status__ = "Development"
 __date__ = "12/22"
 
+import logging
 import time
+import os
 
 import yaml
 
-from src.wake_gan import WakeGAN
-from src.utils.logger import logger
+from scripts.evaluate import evaluate
+from src.wakegan import WakeGAN
+
+logging.basicConfig(
+    format="%(message)s",
+    filename=os.path.join("logs", "train.log"),
+    level=logging.INFO,
+    filemode="w",
+)
+logger = logging.getLogger("train")
 
 
 def main():
     with open("config.yaml") as file:
         config = yaml.safe_load(file)
 
-    wakegan = WakeGAN(config)
+    wakegan = WakeGAN(config, logger)
 
     wakegan.set_device()
     wakegan.preprocess_dataset()
@@ -30,9 +40,10 @@ def main():
         wakegan.load_pretrained_models()
     wakegan.train()
 
+    evaluate()
+
 
 if __name__ == "__main__":
-
     tic = time.time()
     main()
     toc = time.time()

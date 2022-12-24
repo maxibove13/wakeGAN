@@ -46,7 +46,8 @@ class Generator(torch.nn.Module):
     def __init__(self, channels, height, features_g):
         super(Generator, self).__init__()
         self.height = height
-        self.loss = []
+        self.loss_adv = []
+        self.loss_mse = []
         self.channels = channels
         self.linear = torch.nn.Linear(height, height * 64 // channels)
         self.gen = torch.nn.Sequential(

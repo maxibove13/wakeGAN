@@ -6,16 +6,24 @@ __status__ = "Development"
 __date__ = "12/22"
 
 import os
+import json
 from typing import Dict, Tuple
 
+
 import torch
+from torch import Tensor
 from torchvision import transforms
 from torchvision import io
 
 
 class WakeGANDataset:
     def __init__(
-        self, data_dir: str, config: Dict, dataset_type: str, norm_params: Dict = None
+        self,
+        data_dir: str,
+        config: Dict,
+        dataset_type: str,
+        norm_params: Dict = None,
+        save_norm_params: bool = False,
     ):
 
         self.type = dataset_type
@@ -40,7 +48,7 @@ class WakeGANDataset:
 
         self.mean, self.std, self.min, self.max = self._calculate_statistics()
 
-        self.norm_params = self._set_norm_params(norm_params)
+        self.norm_params = self._set_norm_params(norm_params, save_norm_params)
 
         self.transforms = transforms.Compose(
             [
@@ -50,7 +58,7 @@ class WakeGANDataset:
             ]
         )
 
-    def __getitem__(self, idx: int) -> tuple((torch.Tensor, torch.Tensor)):
+    def __getitem__(self, idx: int) -> tuple((Tensor, Tensor)):
 
         image = self._cat_grayscale_images_as_channels(idx)
         image = self.transforms(image)
@@ -62,25 +70,32 @@ class WakeGANDataset:
     def __len__(self) -> int:
         return len(self.images_fns[0])
 
-    def unnormalize_image(self, image: torch.Tensor):
-        if self.norm_type == "min_max":
-            image = self._rescale_back_to_original_range(
-                image, self.range, self.norm_params["max"], self.norm_params["min"]
+    @staticmethod
+    def unnormalize_image(norm_type: str, norm_params: Dict, image: Tensor):
+        if norm_type == "min_max":
+            image = WakeGANDataset._rescale_back_to_original_range(
+                image,
+                norm_params["range"],
+                norm_params["max"],
+                norm_params["min"],
             )
-        elif self.norm_type == "z_score":
-            mean = self.norm_params["mean"]
-            std = self.norm_params["std"]
+        elif norm_type == "z_score":
+            mean = norm_params["mean"]
+            std = norm_params["std"]
             unnormalize = transforms.Normalize((-mean / std), (1.0 / std))
             image = unnormalize(image)
         else:
-            raise ValueError(f"Normalization type {self.norm_type} not supported")
+            raise ValueError(f"Normalization type {norm_type} not supported")
 
         return image
 
-    def _normalize_image(self, image: torch.Tensor):
+    def _normalize_image(self, image: Tensor):
         if self.norm_type == "min_max":
             image = self._rescale_to_range(
-                image, self.range, self.norm_params["max"], self.norm_params["min"]
+                image,
+                self.norm_params["range"],
+                self.norm_params["max"],
+                self.norm_params["min"],
             )
         elif self.norm_type == "z_score":
             normalize_z_score = transforms.Normalize(
@@ -101,17 +116,24 @@ class WakeGANDataset:
             image = io.read_image(path=img_path, mode=io.ImageReadMode.GRAY)
         return image
 
-    def _set_norm_params(self, norm_params):
+    def _set_norm_params(self, norm_params, save: bool = False):
         if not norm_params:
             if self.norm_type == "min_max":
-                norm_params = {"min": self.min, "max": self.max}
+                norm_params = {
+                    "range": self.range,
+                    "min": self.min.item(),
+                    "max": self.max.item(),
+                }
             elif self.norm_type == "z_score":
                 norm_params = {
-                    "mean": self.user_mean if self.user_mean else self.mean,
-                    "std": self.user_std if self.user_std else self.std,
+                    "mean": self.user_mean if self.user_mean else self.mean.item(),
+                    "std": self.user_std if self.user_std else self.std.item(),
                 }
             else:
                 raise ValueError(f"Normalization type {self.norm_type} not supported")
+            if save:
+                with open(os.path.join("data", "norm_params.json"), "w") as f:
+                    json.dump(norm_params, f)
 
         return norm_params
 
@@ -133,24 +155,25 @@ class WakeGANDataset:
             torch.max(images),
         )
 
-    def get_dataloader(self, batch_size: int, num_workers: int):
-        return torch.utils.data.DataLoader(
-            self, batch_size=batch_size, num_workers=num_workers, shuffle=True
+    def set_loader(self, batch_size: int, num_workers: int, shuffle: bool = True):
+        self.loader = torch.utils.data.DataLoader(
+            self, batch_size=batch_size, num_workers=num_workers, shuffle=shuffle
         )
 
-    def rescale_back_to_velocity(self, tensor: torch.Tensor) -> torch.Tensor:
-        return tensor * (self.clim[0][1] - self.clim[0][0]) + self.clim[0][0]
+    @staticmethod
+    def rescale_back_to_velocity(tensor: Tensor, clim: list) -> Tensor:
+        return tensor * (clim[0][1] - clim[0][0]) + clim[0][0]
 
     @staticmethod
     def _rescale_to_range(
-        x: torch.Tensor, range: tuple, x_max: float, x_min: float
-    ) -> torch.Tensor:
+        x: Tensor, range: tuple, x_max: float, x_min: float
+    ) -> Tensor:
         a, b = range
         return (b - a) * (x - x_min) / (x_max - x_min) + a
 
     @staticmethod
     def _rescale_back_to_original_range(
-        x: torch.Tensor, range: tuple, x_max: float, x_min: float
-    ) -> torch.Tensor:
+        x: Tensor, range: tuple, x_max: float, x_min: float
+    ) -> Tensor:
         a, b = range
         return (x - a) * (x_max - x_min) / (b - a) + x_min

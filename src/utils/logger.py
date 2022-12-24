@@ -2,8 +2,8 @@ import logging
 import os
 
 
-if "train.log" in os.listdir("."):
-    os.remove("train.log")
+# if "train.log" in os.listdir("."):
+#     os.remove("train.log")
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
