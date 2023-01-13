@@ -134,7 +134,7 @@ The data is present through a symbolic link between the actual storage folder an
 
 Generator takes the parameters $\mu$ as input and outputs the flow field prediction U as the output
 
-Discriminator takes the data pair of the embedded flow parameter Z and the corresponding flow field $U$ or $U_gen$ (real or generated) as the input, and zeros or ones as outputs.
+Discriminator takes the data pair of the embedded flow parameter Z and the corresponding flow field $U$ or $U_{gen}$ (real or generated) as the input, and zeros or ones as outputs.
 
 The main difference between CGAN and GAN is that the labels (here the flow parameters u) are combined with the corresponding flow field for the examination by the discriminator, while GAN only distinguishes the generated flow field from the real flow field without the labeling information.
 
