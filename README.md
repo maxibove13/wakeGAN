@@ -247,7 +247,7 @@ A general steady-state parametrized fluid system can be described by:
 P[u] = 0, x ~ E ~ \Omega 
 ```
 ```math
-B[u] = 0, x ~ E ~ \delta \Omega
+B[u] = 0, x ~ E ~ \delta ~ \Omega
 ```
 
 Where $u$ is the state of the system while the differential operator $P$ (parametrized by $\mu_p$) represent the PDEs describing the fluid systems, the boundary conditions and the flow domain respectively.
