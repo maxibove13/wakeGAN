@@ -141,10 +141,10 @@ The main difference between CGAN and GAN is that the labels (here the flow param
 The $\mu$ parameters are the input of the CFD simulations.
 These parameters are collected in a input tensor X of shape [$N$ , $N_{\mu}$]
 
-input: [$N$, $X_3$, $C$] (they use profile along y axis)
-output: [$N$, $X_1$,$X_2$,$X_3$,$C$] (flow field data, C is 2 -$U_x$ and $U_y$ -, $N$ samples)
+input: [ $N$ , $X_3$, $C$ ] (they use profile along y axis)
+output: [ $N$ , $X_1$ , $X_2$, $X_3$ , $C$ ] (flow field data, C is 2 - $U_x$ and $U_y$ -, $N$ samples)
 
-The loss is just the common adversarial loss but for the Discriminator instead of x we use [$U$, $\mu$] and for the Generator we use [$G(U)$, $\mu$] 
+The loss is just the common adversarial loss but for the Discriminator instead of x we use [ $U$ , $\mu$ ] and for the Generator we use [ $G(U)$ , $\mu$ ] 
 
 # Versioning data with DVC
 
@@ -221,7 +221,7 @@ Each branch represents a different dataset.
 In order to have the changes in `main` in any feature (dataset) branch we need to `git rebase main` on each branch when we make changes in the code (only changes in `main` allowed).
 However, we don't want to obtain the changes made to `tracked.dvc`, `figures/test/*` and `config.yaml`, we use `.gitattributes` for this.
 
-In the root file `.gitattributes` we specify which file pattern we will exclude from the mergin. In this case, we add the following to `.gitattributes`:
+In the root file `.gitattributes` we specify which file pattern we will exclude from the merging. In this case, we add the following to `.gitattributes`:
 
 ```
 data/preprocessed/tracked.dvc merge=ours
@@ -244,8 +244,8 @@ Rebase tu upgrade the feature branch with main changes
 A general steady-state parametrized fluid system can be described by:
 
 ```math
-P[u] = 0, x E \Omega
-B[u] = 0, x E \delta \Omega
+P[u] = 0, x ~ E ~ \Omega \\
+B[u] = 0, x ~ E ~ \delta \Omega
 ```
 
 Where $u$ is the state of the system while the differential operator $P$ (parametrized by $\mu_p$) represent the PDEs describing the fluid systems, the boundary conditions and the flow domain respectively.
