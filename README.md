@@ -244,7 +244,9 @@ Rebase tu upgrade the feature branch with main changes
 A general steady-state parametrized fluid system can be described by:
 
 ```math
-P[u] = 0, x ~ E ~ \Omega \\
+P[u] = 0, x ~ E ~ \Omega 
+```
+```math
 B[u] = 0, x ~ E ~ \delta \Omega
 ```
 
