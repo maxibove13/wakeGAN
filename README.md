@@ -75,10 +75,10 @@ Check generated files in `/figures/test`:
 # Data pipeline overview:
 
 1) CFD simulations of a WF
-2) Horizontal slices at hub's height of mean horizontal velocity ($U_x$, $U_y$)
+2) Horizontal slices at hub's height of mean horizontal velocity ($U_x$ , $U_y$)
 3) Crop slices into several images around each WT of the WF.
-4) Save them as image files mapped with a certain $v_{min}$ and $v_{max}$. ($v_{min}$, $v_{max}$) -> ($0$, $255$)
-5) Read them, convert them to float32, rescale them to ($-1$, $1$)
+4) Save them as image files mapped with a certain $v_{min}$ and $v_{max}$. ($v_{min}$ , $v_{max}$) -> ($0$, $255$)
+5) Read them, convert them to float32, rescale them to ($-1$ , $1$)
 6) Extract first column of pixels on each channel (inflow velocity)
 7) Transform to tensor
 8) For each fold:
@@ -139,10 +139,10 @@ Discriminator takes the data pair of the embedded flow parameter Z and the corre
 The main difference between CGAN and GAN is that the labels (here the flow parameters u) are combined with the corresponding flow field for the examination by the discriminator, while GAN only distinguishes the generated flow field from the real flow field without the labeling information.
 
 The $\mu$ parameters are the input of the CFD simulations.
-These parameters are collected in a input tensor X of shape [$N$, $N_{\mu}$]
+These parameters are collected in a input tensor X of shape [$N$ , $N_{\mu}$]
 
 input: [$N$, $X_3$, $C$] (they use profile along y axis)
-output: [$N$, $X_1$,$X_2$,$X_3$,$C$] (flow field data, C is 2 -$U_x$ and $U_y$-, $N$ samples)
+output: [$N$, $X_1$,$X_2$,$X_3$,$C$] (flow field data, C is 2 -$U_x$ and $U_y$ -, $N$ samples)
 
 The loss is just the common adversarial loss but for the Discriminator instead of x we use [$U$, $\mu$] and for the Generator we use [$G(U)$, $\mu$] 
 
