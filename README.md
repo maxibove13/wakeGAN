@@ -139,7 +139,7 @@ Discriminator takes the data pair of the embedded flow parameter Z and the corre
 The main difference between CGAN and GAN is that the labels (here the flow parameters u) are combined with the corresponding flow field for the examination by the discriminator, while GAN only distinguishes the generated flow field from the real flow field without the labeling information.
 
 The $\mu$ parameters are the input of the CFD simulations.
-These parameters are collected in a input tensor X of shape [$N$ , $N_{\mu}$]
+These parameters are collected in a input tensor X of shape [ $N$ , $N_{\mu}$ ]
 
 input: [ $N$ , $X_3$, $C$ ] (they use profile along y axis)
 output: [ $N$ , $X_1$ , $X_2$, $X_3$ , $C$ ] (flow field data, C is 2 - $U_x$ and $U_y$ -, $N$ samples)
