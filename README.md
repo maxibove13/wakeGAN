@@ -75,10 +75,10 @@ Check generated files in `/figures/test`:
 # Data pipeline overview:
 
 1) CFD simulations of a WF
-2) Horizontal slices at hub's height of mean horizontal velocity ($U_x$ , $U_y$)
+2) Horizontal slices at hub's height of mean horizontal velocity ( $U_x$ , $U_y$ )
 3) Crop slices into several images around each WT of the WF.
-4) Save them as image files mapped with a certain $v_{min}$ and $v_{max}$. ( $v_{min}$ , $v_{max}$) -> ( $0$ , $255$)
-5) Read them, convert them to float32, rescale them to ($-1$ , $1$)
+4) Save them as image files mapped with a certain $v_{min}$ and $v_{max}$. ( $v_{min}$ , $v_{max}$ ) -> ( $0$ , $255$ )
+5) Read them, convert them to float32, rescale them to ( $-1$ , $1$ )
 6) Extract first column of pixels on each channel (inflow velocity)
 7) Transform to tensor
 8) For each fold:
