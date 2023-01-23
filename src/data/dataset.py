@@ -32,6 +32,7 @@ class WakeGANDataset:
         self.original_size = config["original_size"]
         self.size = config["size"]
         self.clim = [config["figures"]["clim_ux"]]
+        self.wt_grid = config["wt_grid"]
 
         self.norm_type = config["normalization"]["type"]
         self.range = config["normalization"]["range"]
@@ -60,12 +61,12 @@ class WakeGANDataset:
 
     def __getitem__(self, idx: int) -> tuple((Tensor, Tensor)):
 
-        image = self._cat_grayscale_images_as_channels(idx)
+        image, metadata = self._read_image(idx)
         image = self.transforms(image)
 
         inflow = image[:, :, 0]
 
-        return image, inflow
+        return image, inflow, metadata
 
     def __len__(self) -> int:
         return len(self.images_fns[0])
@@ -107,14 +108,32 @@ class WakeGANDataset:
 
         return image
 
-    def _cat_grayscale_images_as_channels(self, idx: int):
+    def _read_image(self, idx: int):
         image = torch.zeros(
             (len(self), self.channels, self.original_size[0], self.original_size[1])
         )
         for i, fns in enumerate(self.images_fns):
             img_path = os.path.join(self.data_subdir[i], fns[idx])
             image = io.read_image(path=img_path, mode=io.ImageReadMode.GRAY)
-        return image
+            metadata = self._extract_metadata(fns[idx])
+        return image, metadata
+
+    def _extract_metadata(self, filename: str) -> Tuple:
+        pos = int(filename.split("_")[0][6:])
+        pos_x = pos % self.wt_grid[0]
+        pos_y = pos % self.wt_grid[1]
+
+        with open(os.path.join("data", "aux", "turns.json")) as f:
+            angle_map = json.load(f)
+        angle = angle_map[filename[4:6]]
+
+        metadata = {
+            "prec": float(filename[1:4]) / 100,
+            "angle": angle,
+            "pos": (pos_x, pos_y),
+        }
+
+        return metadata
 
     def _set_norm_params(self, norm_params, save: bool = False):
         if not norm_params:

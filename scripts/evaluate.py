@@ -56,17 +56,34 @@ def evaluate():
         batch_size=len(dataset), num_workers=wakegan.workers, shuffle=False
     )
 
-    images_raw, synths_raw, rmse = wakegan.evaluate_generator(dataset)
+    images_raw, synths_raw, rmse, metadatas = wakegan.evaluate_generator(dataset)
 
     images = torch.zeros((len(dataset), 1, wakegan.size[0], wakegan.size[1]))
     synths = torch.zeros((len(dataset), 1, wakegan.size[0], wakegan.size[1]))
-    for c, (img, synth) in enumerate(zip(images_raw, synths_raw)):
+    mtdts = []
+    for c, (img, synth, prec, angle, pos_x, pos_y) in enumerate(
+        zip(
+            images_raw,
+            synths_raw,
+            metadatas["prec"],
+            metadatas["angle"],
+            metadatas["pos"][0],
+            metadatas["pos"][1],
+        )
+    ):
         images[c] = wakegan.transform_back(img, dataset)
         synths[c] = wakegan.transform_back(synth, dataset)
 
+        mtdts.append(
+            {
+                "prec": prec.item(),
+                "angle": angle,
+                "pos": (pos_x.item(), pos_y.item()),
+            }
+        )
+
     images = images.squeeze()
     synths = synths.squeeze()
-
     images_to_plot = [
         images[0],
         synths[0],
@@ -84,9 +101,10 @@ def evaluate():
     flow_image_plotter.plot(images_to_plot)
 
     profiles_plotter = ProfilesPlotter(
-        config["data"]["wt_diam"],
-        config["data"]["lim_around_wt"],
-        config["data"]["size"],
+        wt_d=config["data"]["wt_diam"],
+        limits=config["data"]["lim_around_wt"],
+        size=config["data"]["size"],
+        metadata=mtdts[0:4],
     )
     profiles_plotter.plot(images_to_plot)
 

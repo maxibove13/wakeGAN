@@ -164,7 +164,7 @@ class WakeGAN:
             self.generator.running_loss_mse = 0
             self.discriminator.running_loss = 0
             running_mse = 0
-            for c, (images, inflows) in enumerate(self.dataset["train"].loader):
+            for c, (images, inflows, _) in enumerate(self.dataset["train"].loader):
                 images = images.float().to(self.device)
                 inflows = inflows.float().to(self.device)
                 synths = self.generator(inflows)
@@ -188,7 +188,7 @@ class WakeGAN:
 
             self.rmse["train"].append(torch.sqrt(running_mse / n_minibatches).cpu())
 
-            images_dev, synths_dev, rmse_dev = self.evaluate_generator(
+            images_dev, synths_dev, rmse_dev, _ = self.evaluate_generator(
                 self.dataset["dev"]
             )
 
@@ -257,7 +257,7 @@ class WakeGAN:
     def evaluate_generator(self, dataset: WakeGANDataset) -> tuple((Tensor, float)):
         self.generator.eval()
         running_mse = 0
-        for (images, inflows) in dataset.loader:
+        for (images, inflows, metadatas) in dataset.loader:
             inflows = inflows.float().to(self.device)
             images = images.to(self.device)
 
@@ -266,7 +266,7 @@ class WakeGAN:
 
         mse = running_mse / len(dataset.loader)
         rmse = torch.sqrt(mse).cpu()
-        return images, synths, rmse
+        return images, synths, rmse, metadatas
 
     def _calculate_batch_mse(
         self, images: Tensor, synths: Tensor, dataset: WakeGANDataset
@@ -315,7 +315,7 @@ class WakeGAN:
         loss_adv = self.criterion(pred_synth, torch.ones_like(pred_synth))
         loss_mse = self.mse(images, synths)
 
-        loss = loss_adv
+        loss = loss_adv + loss_mse
         self.optimizer["generator"].zero_grad()
         loss.backward()
         self.optimizer["generator"].step()
