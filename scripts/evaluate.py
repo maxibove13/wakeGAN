@@ -117,8 +117,15 @@ def evaluate():
     )
     profiles_plotter.plot(images_to_plot)
 
+    _save_rmse(rmse.item())
+
     toc = time.time()
     logger.info(f"Evaluation duration: {((toc-tic)/60):.2f} m ")
+
+
+def _save_rmse(rmse: str):
+    with open(os.path.join("metrics.json"), "w") as file:
+        json.dump({"rmse": rmse}, file)
 
 
 if __name__ == "__main__":

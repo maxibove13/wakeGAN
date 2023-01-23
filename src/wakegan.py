@@ -317,7 +317,7 @@ class WakeGAN:
         loss_adv = self.criterion(pred_synth, torch.ones_like(pred_synth))
         loss_mse = self.mse(images, synths)
 
-        loss = self.f_adv * loss_adv + self.f_mse * loss_mse
+        loss = self.f_adv_gen * loss_adv + self.f_mse * loss_mse
         self.optimizer["generator"].zero_grad()
         loss.backward()
         self.optimizer["generator"].step()

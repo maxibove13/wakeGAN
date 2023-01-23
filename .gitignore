@@ -17,6 +17,7 @@ figures/wf_slices
 *swp
 .vscode
 metrics.json
+dvc_run.sh
 
 dvc-remote-data*
 *notes.md
