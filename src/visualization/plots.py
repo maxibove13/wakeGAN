@@ -254,7 +254,7 @@ class FlowImagePlotter:
 
 
 class ProfilesPlotter:
-    def __init__(self, wt_d: float, limits: tuple, size: tuple):
+    def __init__(self, wt_d: float, limits: tuple, size: tuple, metadata: dict):
         self.fig = plt.figure(figsize=(10, 25), dpi=300)
         self.wt_d = wt_d
         self.grid = ImageGrid(
@@ -274,6 +274,10 @@ class ProfilesPlotter:
 
         self.x = np.linspace(x_left, x_right, num=size[0])
         self.y = np.linspace(y_bottom, y_top, num=size[0])
+
+        self.prec = [m["prec"] for m in metadata]
+        self.angle = [m["angle"] for m in metadata]
+        self.pos = [m["pos"] for m in metadata]
 
     def plot(self, images: list):
 
@@ -301,7 +305,11 @@ class ProfilesPlotter:
                 if i == len(self.grid.axes_row) - 1 and j == 0:
                     ax.set_xlabel("$U_x$ [ms$^{-1}$]", fontsize=16)
                 if j == 0:
-                    ax.set_ylabel(f"$y/D$ - Case #{i+1}", fontsize=16)
+                    m_s = "ms$^{-1}$"
+                    ax.set_ylabel(
+                        f"$y/D$ -#{i+1}, prec.: {self.prec[i]} {m_s}, {self.angle[i]}°, {self.pos[i]}",
+                        fontsize=14,
+                    )
 
         self.fig.legend(
             handles=[real_curve, synth_curve],
