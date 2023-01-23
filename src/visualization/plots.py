@@ -333,7 +333,7 @@ def plot_histogram(dataset: WakeGANDataset):
         (len(dataset), dataset.channels, dataset.size[0], dataset.size[1])
     )
     images_norm = images_unnorm.clone()
-    for c, (image, inflow) in enumerate(dataset):
+    for c, (image, _, _) in enumerate(dataset):
         images_norm[c] = image
         images_unnorm[c] = dataset.unnormalize_image(
             dataset.norm_type, dataset.norm_params, image

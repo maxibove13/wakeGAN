@@ -6,6 +6,7 @@ data/aux/**
 models/*
 
 figures/monitor/*
+figures/evaluation/*
 figures/wf_slices
 
 *.log
@@ -18,7 +19,6 @@ figures/wf_slices
 metrics.json
 
 dvc-remote-data*
-dvc.lock
 *notes.md
 
 # Exceptions

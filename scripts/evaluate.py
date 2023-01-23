@@ -34,6 +34,15 @@ def evaluate():
     with open("config.yaml") as file:
         config = yaml.safe_load(file)
 
+    with open("params.yaml") as file:
+        hparams = yaml.safe_load(file)
+
+    config["train"]["num_epochs"] = hparams["num_epochs"]
+    config["train"]["lr"] = hparams["lr"]
+    config["train"]["batch_size"] = hparams["batch_size"]
+    config["train"]["f_adv_gen"] = hparams["f_adv_gen"]
+    config["train"]["f_mse"] = hparams["f_mse"]
+
     tic = time.time()
     wakegan = WakeGAN(config, logger)
     wakegan.set_device()
