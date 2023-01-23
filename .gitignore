@@ -15,8 +15,10 @@ figures/wf_slices
 *pyc
 *swp
 .vscode
+metrics.json
 
 dvc-remote-data*
+dvc.lock
 *notes.md
 
 # Exceptions
