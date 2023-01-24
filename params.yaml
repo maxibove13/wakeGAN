@@ -1,5 +1,5 @@
-lr: 1.0e-4
-num_epochs: 210
-batch_size: 16
-f_adv_gen: 1
-f_mse: 0
+lr: 1e-05
+num_epochs: 60
+batch_size: 32
+f_adv_gen: 0
+f_mse: 1

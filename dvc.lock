@@ -2,13 +2,19 @@ schema: '2.0'
 stages:
   evaluate:
     cmd: python3 ./scripts/evaluate.py
+    params:
+      params.yaml:
+        batch_size: 32
+        f_mse: 1
+        num_epochs: 60
     outs:
     - path: metrics.json
-      md5: 9a72fe800ea8a6b07aa402328d0614da
-      size: 28
+      md5: e528d508d30a5f3dae1cc10bbff21cf9
+      size: 29
   train:
     cmd: python3 ./scripts/train.py
     params:
       params.yaml:
-        batch_size: 16
-        num_epochs: 150
+        batch_size: 32
+        f_mse: 1
+        num_epochs: 60

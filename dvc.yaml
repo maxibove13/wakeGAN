@@ -3,8 +3,13 @@ stages:
     cmd: python3 ./scripts/train.py
     params:
       - num_epochs
-        
+      - batch_size
+      - f_mse
   evaluate:
     cmd: python3 ./scripts/evaluate.py
+    params:
+      - num_epochs
+      - batch_size
+      - f_mse
     metrics:
       - metrics.json  

@@ -20,14 +20,15 @@ from src.data.dataset import WakeGANDataset
 class MetricsPlotter:
     def __init__(self, epochs: int, clim: tuple):
         self.epochs = epochs
-        self.fig, self.axs = plt.subplots(2, 1, dpi=300)
+        self.fig, self.axs = plt.subplots(3, 1, dpi=300)
 
-        self.axs[0].set(ylabel="loss")
-        self.axs[0].xaxis.set_ticklabels([])
+        for ax in [self.axs[0], self.axs[1]]:
+            ax.set(ylabel="loss")
+            ax.xaxis.set_ticklabels([])
 
-        self.axs[1].set(xlabel="epochs")
-        self.axs[1].set(ylabel="RMSE [ms$^{-1}$]")
-        sec_ax1 = self.axs[1].secondary_yaxis(
+        self.axs[2].set(xlabel="epochs")
+        self.axs[2].set(ylabel="RMSE [ms$^{-1}$]")
+        sec_ax1 = self.axs[2].secondary_yaxis(
             "right",
             functions=(
                 lambda x: x / clim[0][1] * 100,
@@ -40,7 +41,7 @@ class MetricsPlotter:
             ax.set_xlim(1, self.epochs - 1)
             ax.xaxis.set_major_locator(MaxNLocator(integer=True))
             ax.grid(visible=True)
-        self.axs[1].set_ylim(0, 1)
+        self.axs[2].set_ylim(0, 1)
 
     def plot(self, loss: Dict, rmse: Dict, epoch: int):
         """Plot losses and RMSE for train and dev sets"""
@@ -48,18 +49,25 @@ class MetricsPlotter:
 
         self.axs[0].plot(x, loss["disc"], label="Discriminator loss", color="k")
         self.axs[0].plot(
-            x, loss["gen_adv"], label="Generator adversarial loss", color="r"
+            x,
+            np.array(loss["gen_adv"]) + np.array(loss["gen_mse"]),
+            label="Generator loss",
+            color="r",
         )
-        self.axs[0].plot(x, loss["gen_mse"], label="Generator mse loss", color="C1")
 
         self.axs[1].plot(
+            x, loss["gen_adv"], label="Generator adversarial loss", color="r"
+        )
+        self.axs[1].plot(x, loss["gen_mse"], label="Generator MSE loss", color="C1")
+
+        self.axs[2].plot(
             x, rmse["train"], label="RMSE Ux (Training)", color="g", ls="-"
         )
-        self.axs[1].plot(x, rmse["dev"], label="RMSE Ux (Testing)", color="g", ls="--")
+        self.axs[2].plot(x, rmse["dev"], label="RMSE Ux (Testing)", color="g", ls="--")
 
         if epoch == 0:
             for i, ax in enumerate(self.axs):
-                self.axs[1].legend(
+                ax.legend(
                     loc="upper right" if i == 1 else "lower right", fontsize="x-small"
                 )
 

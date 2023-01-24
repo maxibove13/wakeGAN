@@ -54,6 +54,9 @@ class WakeGAN:
 
         self.rmse = {"train": [], "dev": []}
 
+        torch.manual_seed(42)
+        torch.cuda.manual_seed_all(42)
+
     def set_device(self) -> None:
 
         if not torch.cuda.is_available():
@@ -113,10 +116,10 @@ class WakeGAN:
 
         self.optimizer = {}
         self.optimizer["generator"] = torch.optim.Adam(
-            self.generator.parameters(), lr=self.lr, betas=self.betas
+            self.generator.parameters(), lr=float(self.lr), betas=self.betas
         )
         self.optimizer["discriminator"] = torch.optim.Adam(
-            self.discriminator.parameters(), lr=self.lr, betas=self.betas
+            self.discriminator.parameters(), lr=float(self.lr), betas=self.betas
         )
 
         self.logger.info(
@@ -301,7 +304,7 @@ class WakeGAN:
         loss_real = self.criterion(pred_real, torch.ones_like(pred_real))
         loss_synth = self.criterion(pred_synth, torch.zeros_like(pred_synth))
 
-        loss_d = (loss_real + loss_synth) / 2
+        loss_d = loss_real + loss_synth
 
         self.optimizer["discriminator"].zero_grad()
         loss_d.backward(retain_graph=True)
