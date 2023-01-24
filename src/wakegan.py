@@ -234,21 +234,26 @@ class WakeGAN:
             )
 
             if (epoch + 1) % self.save_every == 0:
-                self._save_models(
-                    self.generator,
-                    self.net_name["generator"],
-                    self.optimizer["generator"],
-                    self.logger,
-                )
-                self._save_models(
-                    self.discriminator,
-                    self.net_name["discriminator"],
-                    self.optimizer["discriminator"],
-                    self.logger,
-                )
+                self._save_models()
+
+        self._save_models()
+
+    def _save_models(self):
+        self._save_model(
+            self.generator,
+            self.net_name["generator"],
+            self.optimizer["generator"],
+            self.logger,
+        )
+        self._save_model(
+            self.discriminator,
+            self.net_name["discriminator"],
+            self.optimizer["discriminator"],
+            self.logger,
+        )
 
     @staticmethod
-    def _save_models(model, name, optimizer, logger):
+    def _save_model(model, name, optimizer, logger):
         torch.save(
             {
                 "state_dict": model.state_dict(),

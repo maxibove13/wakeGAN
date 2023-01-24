@@ -26,7 +26,7 @@ models:
   f_d: 64
   load: False
   save: True
-  save_every: 100
+  save_every: 1000
   name_gen: 'wake_gan_gen.pth'
   name_disc: 'wake_gan_disc.pth'
 
