@@ -23,6 +23,7 @@ from src.utils import utils
 
 class WakeGAN:
     def __init__(self, config: Dict, logger: logging.Logger):
+
         self.logger = logger
         self.channels: int = config["data"]["channels"]
         self.size: tuple = config["data"]["size"]
@@ -54,8 +55,8 @@ class WakeGAN:
 
         self.rmse = {"train": [], "dev": []}
 
-        torch.manual_seed(42)
-        torch.cuda.manual_seed_all(42)
+        torch.manual_seed(4)
+        torch.use_deterministic_algorithms(True)
 
     def set_device(self) -> None:
 
@@ -114,13 +115,23 @@ class WakeGAN:
         self.criterion = torch.nn.BCELoss()
         self.mse = torch.nn.MSELoss()
 
-        self.optimizer = {}
-        self.optimizer["generator"] = torch.optim.Adam(
-            self.generator.parameters(), lr=float(self.lr), betas=self.betas
-        )
-        self.optimizer["discriminator"] = torch.optim.Adam(
-            self.discriminator.parameters(), lr=float(self.lr), betas=self.betas
-        )
+        self.optimizer = {
+            "generator": torch.optim.Adam(
+                self.generator.parameters(), lr=float(self.lr), betas=self.betas
+            ),
+            "discriminator": torch.optim.Adam(
+                self.discriminator.parameters(), lr=float(self.lr), betas=self.betas
+            ),
+        }
+
+        self.scheduler = {
+            "generator": torch.optim.lr_scheduler.CosineAnnealingLR(
+                self.optimizer["generator"], T_max=50, eta_min=1e-7, verbose=True
+            ),
+            "discriminator": torch.optim.lr_scheduler.CosineAnnealingLR(
+                self.optimizer["discriminator"], T_max=50, eta_min=1e-7, verbose=True
+            ),
+        }
 
         self.logger.info(
             f"Using {self.criterion}\n"
@@ -139,18 +150,8 @@ class WakeGAN:
         )
 
     def train(self):
-
-        self.generator.train()
-        self.discriminator.train()
-
-        self.dataset["train"].set_loader(
-            batch_size=self.minibatch_size, num_workers=self.workers
-        )
-        self.dataset["dev"].set_loader(
-            batch_size=self.minibatch_size, num_workers=self.workers
-        )
+        self._set_dataset_loaders()
         n_minibatches = len(self.dataset["train"].loader)
-
         self.logger.info(
             f"Training set samples: {len(self.dataset['train'])}\n"
             f"Testing set samples: {len(self.dataset['dev'])}\n"
@@ -159,11 +160,26 @@ class WakeGAN:
             f"Number of training batches: {n_minibatches}\n"
         )
 
-        metrics_plotter = plots.MetricsPlotter(self.epochs, self.dataset["train"].clim)
-        flow_image_plotter = plots.FlowImagePlotter(
-            self.channels, self.dataset["train"].clim
-        )
+        plotters = {
+            "metrics": plots.MetricsPlotter(self.epochs, self.dataset["train"].clim),
+            "flow": plots.FlowImagePlotter(self.channels, self.dataset["train"].clim),
+        }
 
+        self._train_loop(plotters, n_minibatches)
+        self._save_models()
+
+    def _set_dataset_loaders(self) -> None:
+        self.dataset["train"].set_loader(
+            batch_size=self.minibatch_size, num_workers=self.workers
+        )
+        self.dataset["dev"].set_loader(
+            batch_size=self.minibatch_size, num_workers=self.workers
+        )
+        return None
+
+    def _train_loop(self, plotters: Dict, n_minibatches: int) -> None:
+        self.generator.train()
+        self.discriminator.train()
         for epoch in range(self.epochs):
             self.generator.running_loss_adv = 0
             self.generator.running_loss_mse = 0
@@ -180,6 +196,9 @@ class WakeGAN:
                 running_mse += self._calculate_batch_mse(
                     images, synths, self.dataset["train"]
                 )
+
+            self.scheduler["discriminator"].step()
+            self.scheduler["generator"].step()
 
             self.discriminator.loss.append(
                 self.discriminator.running_loss / n_minibatches
@@ -199,7 +218,7 @@ class WakeGAN:
 
             self.rmse["dev"].append(rmse_dev)
 
-            metrics_plotter.plot(
+            plotters["metrics"].plot(
                 {
                     "gen_adv": self.generator.loss_adv,
                     "gen_mse": self.generator.loss_mse,
@@ -209,7 +228,7 @@ class WakeGAN:
                 epoch,
             )
 
-            flow_image_plotter.plot(
+            plotters["flow"].plot(
                 [
                     self.transform_back(
                         images[0][0].detach().cpu(), self.dataset["train"]
@@ -236,7 +255,44 @@ class WakeGAN:
             if (epoch + 1) % self.save_every == 0:
                 self._save_models()
 
-        self._save_models()
+        return None
+
+    def _train_discriminator(self, inflows, images, synths) -> None:
+        """Train Discriminator: max log(D(x)) + log(1 - D(G(z)))"""
+
+        pred_real = self.discriminator(images, inflows)
+        pred_synth = self.discriminator(synths, inflows)
+
+        loss_real = self.criterion(pred_real, torch.ones_like(pred_real))
+        loss_synth = self.criterion(pred_synth, torch.zeros_like(pred_synth))
+
+        loss_d = loss_real + loss_synth
+
+        self.optimizer["discriminator"].zero_grad()
+        loss_d.backward(retain_graph=True)
+        self.optimizer["discriminator"].step()
+
+        self.discriminator.running_loss += loss_d.item()
+
+        return None
+
+    def _train_generator(self, images, synths, inflows, epoch) -> None:
+        """Train Generator: min log(1 - D(G(z))) <-> max log(D(G(z))"""
+
+        pred_synth = self.discriminator(synths, inflows)
+
+        loss_adv = self.criterion(pred_synth, torch.ones_like(pred_synth))
+        loss_mse = self.mse(images, synths)
+
+        loss = self.f_adv_gen * loss_adv + self.f_mse * loss_mse
+        self.optimizer["generator"].zero_grad()
+        loss.backward()
+        self.optimizer["generator"].step()
+
+        self.generator.running_loss_adv += loss_adv.item()
+        self.generator.running_loss_mse += loss_mse.item()
+
+        return None
 
     def _save_models(self):
         self._save_model(
@@ -251,6 +307,8 @@ class WakeGAN:
             self.optimizer["discriminator"],
             self.logger,
         )
+
+        return None
 
     @staticmethod
     def _save_model(model, name, optimizer, logger):
@@ -299,39 +357,6 @@ class WakeGAN:
         )
         image = WakeGANDataset.rescale_back_to_velocity(image, dataset.clim)
         return image
-
-    def _train_discriminator(self, inflows, images, synths) -> float:
-        """Train Discriminator: max log(D(x)) + log(1 - D(G(z)))"""
-
-        pred_real = self.discriminator(images, inflows)
-        pred_synth = self.discriminator(synths, inflows)
-
-        loss_real = self.criterion(pred_real, torch.ones_like(pred_real))
-        loss_synth = self.criterion(pred_synth, torch.zeros_like(pred_synth))
-
-        loss_d = loss_real + loss_synth
-
-        self.optimizer["discriminator"].zero_grad()
-        loss_d.backward(retain_graph=True)
-        self.optimizer["discriminator"].step()
-
-        self.discriminator.running_loss += loss_d.item()
-
-    def _train_generator(self, images, synths, inflows, epoch) -> float:
-        """Train Generator: min log(1 - D(G(z))) <-> max log(D(G(z))"""
-
-        pred_synth = self.discriminator(synths, inflows)
-
-        loss_adv = self.criterion(pred_synth, torch.ones_like(pred_synth))
-        loss_mse = self.mse(images, synths)
-
-        loss = self.f_adv_gen * loss_adv + self.f_mse * loss_mse
-        self.optimizer["generator"].zero_grad()
-        loss.backward()
-        self.optimizer["generator"].step()
-
-        self.generator.running_loss_adv += loss_adv.item()
-        self.generator.running_loss_mse += loss_mse.item()
 
     def plot_monitor_figures():
         ...

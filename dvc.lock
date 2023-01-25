@@ -9,12 +9,17 @@ stages:
         num_epochs: 60
     outs:
     - path: metrics.json
-      md5: e528d508d30a5f3dae1cc10bbff21cf9
-      size: 29
+      md5: 6fcc2507e36a72fe9499463cfc992411
+      size: 28
   train:
-    cmd: python3 ./scripts/train.py
+    cmd: export CUBLAS_WORKSPACE_CONFIG=:4096:8; python3 ./scripts/train.py
     params:
       params.yaml:
         batch_size: 32
-        f_mse: 1
-        num_epochs: 60
+        f_adv_gen: 1
+        f_mse: 0
+        num_epochs: 40
+    outs:
+    - path: metrics.json
+      md5: 62fe0dfea4e2e58f158967d9c0e2b25f
+      size: 28
