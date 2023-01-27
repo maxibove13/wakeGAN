@@ -10,10 +10,11 @@ import json
 from typing import Dict, Tuple
 
 
-import torch
 from torch import Tensor
-from torchvision import transforms
 from torchvision import io
+from torchvision import transforms
+import pytorch_lightning as pl
+import torch
 
 
 class WakeGANDataset:
@@ -60,7 +61,6 @@ class WakeGANDataset:
         )
 
     def __getitem__(self, idx: int) -> tuple((Tensor, Tensor)):
-
         image, metadata = self._read_image(idx)
         image = self.transforms(image)
 
@@ -174,10 +174,10 @@ class WakeGANDataset:
             torch.max(images),
         )
 
-    def set_loader(self, batch_size: int, num_workers: int, shuffle: bool = True):
-        self.loader = torch.utils.data.DataLoader(
-            self, batch_size=batch_size, num_workers=num_workers, shuffle=shuffle
-        )
+    # def set_loader(self, batch_size: int, num_workers: int, shuffle: bool = True):
+    #     self.loader = torch.utils.data.DataLoader(
+    #         self, batch_size=batch_size, num_workers=num_workers, shuffle=shuffle
+    #     )
 
     @staticmethod
     def rescale_back_to_velocity(tensor: Tensor, clim: list) -> Tensor:
@@ -196,3 +196,47 @@ class WakeGANDataset:
     ) -> Tensor:
         a, b = range
         return (x - a) * (x_max - x_min) / (b - a) + x_min
+
+
+class WakeGANDataModule(pl.LightningDataModule):
+    def __init__(self, config):
+        super().__init__()
+        self.data_config: Dict = config["data"]
+        self.data_dir: Dict = {
+            "train": os.path.join("data", "preprocessed", "tracked", "train"),
+            "dev": os.path.join("data", "preprocessed", "tracked", "test"),
+        }
+        self.save: bool = config["models"]["save"]
+        self.batch_size = config["train"]["batch_size"]
+        self.num_workers = config["train"]["num_workers"]
+
+    def setup(self, stage: str):
+        self.dataset_train = WakeGANDataset(
+            self.data_dir["train"],
+            self.data_config,
+            "train",
+            save_norm_params=True if self.save else False,
+        )
+        self.dataset_dev = WakeGANDataset(
+            self.data_dir["dev"],
+            self.data_config,
+            "dev",
+            save_norm_params=True if self.save else False,
+        )
+        self.norm_params = self.dataset_train.norm_params
+
+    def train_dataloader(self):
+        return torch.utils.data.DataLoader(
+            self.dataset_train,
+            batch_size=self.batch_size,
+            num_workers=self.num_workers,
+            shuffle=True,
+        )
+
+    def val_dataloader(self):
+        return torch.utils.data.DataLoader(
+            self.dataset_train,
+            batch_size=self.batch_size,
+            num_workers=self.num_workers,
+            shuffle=False,
+        )

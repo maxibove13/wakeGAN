@@ -9,6 +9,8 @@ figures/monitor/*
 figures/evaluation/*
 figures/wf_slices
 
+lightning_logs
+
 *.log
 
 *.egg-info

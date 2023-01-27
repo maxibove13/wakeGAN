@@ -9,10 +9,11 @@ import logging
 import os
 from typing import List, Dict
 
-import numpy as np
-import torch
-from torch.utils.data.dataloader import DataLoader
 from torch import Tensor
+from torch.utils.data.dataloader import DataLoader
+import numpy as np
+import pytorch_lightning as pl
+import torch
 
 from src.data.dataset import WakeGANDataset
 
@@ -375,3 +376,161 @@ class WakeGAN:
             param_group["lr"] = self.lr
 
         self.logger.info(f"Loaded model {name} from disk")
+
+
+class LitWakeGAN(pl.LightningModule):
+    def __init__(self, config: Dict, norm_params: Dict):
+
+        super().__init__()
+        # self.save_hyperparameters()
+        self._set_hparams(config, norm_params)
+
+        torch.manual_seed(4)
+        torch.use_deterministic_algorithms(True)
+
+        self.generator = dcgan.Generator(self.channels, self.size[0], self.feat_gen)
+        self.discriminator = dcgan.Discriminator(
+            self.channels, self.feat_disc, self.size[0]
+        )
+
+        self.criterion = torch.nn.BCELoss()
+        self.mse = torch.nn.MSELoss()
+
+    def forward(self, z):
+        return self.generator(z)
+
+    def training_step(self, batch, batch_idx, optimizer_idx):
+
+        images, inflows, _ = batch
+
+        self.synths = self(inflows)
+
+        if optimizer_idx == 0:
+            loss = self._train_discriminator(inflows, images)
+
+        if optimizer_idx == 1:
+            loss = self._train_generator(images, inflows)
+
+        mse = self._calculate_batch_mse(images, self.synths, self.dataset["train"])
+
+        self.log("mse", mse, prog_bar=True)
+
+        return loss
+
+    # def training_epoch_end(self, training_step_outputs):
+    #     all_preds = torch.stack(training_step_outputs)
+
+    def validation_step(self, batch, batch_idx):
+        images, inflows, _ = batch
+
+        synths = self(inflows)
+
+        # running_mse = self._calculate_batch_mse(images, synths, self.dataset["val"])
+
+        # self.log("val_mse", running_mse)
+
+    def predict_step(self, batch, batch_idx):
+        inflows, _ = batch
+        return self(inflows)
+
+    def configure_optimizers(self):
+        opt_g = torch.optim.Adam(
+            self.generator.parameters(), lr=float(self.lr), betas=self.betas
+        )
+        opt_d = torch.optim.Adam(
+            self.discriminator.parameters(), lr=float(self.lr), betas=self.betas
+        )
+
+        lr_scheduler_g = torch.optim.lr_scheduler.CosineAnnealingLR(
+            opt_g, T_max=50, eta_min=1e-7, verbose=False
+        )
+        lr_scheduler_d = torch.optim.lr_scheduler.CosineAnnealingLR(
+            opt_d, T_max=50, eta_min=1e-7, verbose=False
+        )
+
+        return [opt_g, opt_d], [lr_scheduler_g, lr_scheduler_d]
+
+    def _train_discriminator(self, inflows, images) -> None:
+        """Train Discriminator: max log(D(x)) + log(1 - D(G(z)))"""
+
+        pred_real = self.discriminator(images, inflows)
+        pred_synth = self.discriminator(self.synths, inflows)
+
+        loss_real = self.criterion(pred_real, torch.ones_like(pred_real))
+        loss_synth = self.criterion(pred_synth, torch.zeros_like(pred_synth))
+
+        d_loss = loss_real + loss_synth
+
+        self.log("d_loss", d_loss, prog_bar=True)
+
+        return d_loss
+
+    def _train_generator(self, images, inflows) -> None:
+        """Train Generator: min log(1 - D(G(z))) <-> max log(D(G(z))"""
+
+        pred_synth = self.discriminator(self.synths, inflows)
+
+        loss_adv = self.criterion(pred_synth, torch.ones_like(pred_synth))
+        loss_mse = self.mse(images, self.synths)
+
+        g_loss = (1 - self.f_mse) * loss_adv + self.f_mse * loss_mse
+
+        self.log("g_loss", g_loss, prog_bar=True)
+
+        return g_loss
+
+    def _set_hparams(self, config, norm_params):
+        # self.logger = logger
+        self.channels: int = config["data"]["channels"]
+        self.size: tuple = config["data"]["size"]
+        self.data_dir: Dict = {
+            "train": os.path.join("data", "preprocessed", "tracked", "train"),
+            "test": os.path.join("data", "preprocessed", "tracked", "test"),
+        }
+        self.data_config: Dict = config["data"]
+        self.norm = {
+            "type": config["data"]["normalization"]["type"],
+            "params": norm_params,
+        }
+        self.clim = [config["data"]["figures"]["clim_ux"]]
+
+        self.device_name: str = config["train"]["device"]
+        self.lr: float = config["train"]["lr"]
+        self.minibatch_size: int = config["train"]["batch_size"]
+        self.f_mse: int = config["train"]["f_mse"]
+        self.betas: tuple = (0.5, 0.999)
+        self.workers: int = config["train"]["num_workers"]
+
+        self.load = config["models"]["load"]
+        self.save = config["models"]["save"]
+        self.save_every = config["models"]["save_every"]
+
+        self.net_name = {}
+        self.net_name["generator"] = config["models"]["name_gen"]
+        self.net_name["discriminator"] = config["models"]["name_disc"]
+
+        self.feat_gen = config["models"]["f_g"]
+        self.feat_disc = config["models"]["f_d"]
+
+        self.rmse = {"train": [], "dev": []}
+
+    def _calculate_batch_mse(
+        self, images: Tensor, synths: Tensor, dataset: WakeGANDataset
+    ) -> Tensor:
+        mse = 0
+        for (img, synth) in zip(images, synths):
+            img = self.transform_back(img)
+            synth = self.transform_back(synth)
+
+            mse += utils.calculate_mse(
+                img.flatten(), synth.flatten(), np.prod(self.size)
+            )
+        mse /= len(images)
+        return mse
+
+    def transform_back(self, image: Tensor) -> Tensor:
+        image = WakeGANDataset.unnormalize_image(
+            self.norm.type, self.norm.params, image
+        )
+        image = WakeGANDataset.rescale_back_to_velocity(image, self.clim)
+        return image

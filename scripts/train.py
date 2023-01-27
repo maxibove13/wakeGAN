@@ -15,7 +15,13 @@ import os
 import yaml
 
 from scripts import evaluate
-from src.wakegan import WakeGAN
+from src.wakegan import LitWakeGAN
+from src.data import dataset
+import pytorch_lightning as pl
+from torch import set_float32_matmul_precision
+
+from argparse import ArgumentParser
+
 
 logging.basicConfig(
     format="%(message)s",
@@ -25,25 +31,42 @@ logging.basicConfig(
 )
 logger = logging.getLogger("train")
 
+set_float32_matmul_precision("medium")
+
 
 def main():
     with open("config.yaml") as file:
         config = yaml.safe_load(file)
 
-    wakegan = WakeGAN(config, logger)
+    # wakegan = WakeGAN(config, logger)
 
-    wakegan.set_device()
-    wakegan.preprocess_dataset()
-    wakegan.initialize_models()
-    wakegan.define_loss_and_optimizer()
-    if wakegan.load:
-        wakegan.load_pretrained_models()
-    wakegan.train()
+    # wakegan.set_device()
+    # wakegan.preprocess_dataset()
+    # wakegan.initialize_models()
+    # wakegan.define_loss_and_optimizer()
+    # if wakegan.load:
+    #     wakegan.load_pretrained_models()
+    # wakegan.train()
 
-    evaluate.evaluate()
+    # evaluate.evaluate()
+
+    trainer = pl.Trainer(
+        accelerator="gpu",
+        devices=1,
+        log_every_n_steps=10,
+        max_epochs=config["train"]["num_epochs"],
+    )
+    data = dataset.WakeGANDataModule(config)
+    model = LitWakeGAN(config, data.norm_params)
+
+    trainer.fit(model, data)
 
 
 if __name__ == "__main__":
+    # parser = ArgumentParser()
+    # parser = pl.Trainer.add_argparse_args(parser)
+    # args = parser.parse_args()
+
     tic = time.time()
     main()
     toc = time.time()

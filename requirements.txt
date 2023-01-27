@@ -1,19 +1,21 @@
 # # local packages
 -e .
 # external packages
+--extra-index-url https://download.pytorch.org/whl/cu116
 albumentations
 dvc
 dvc-gdrive
 ipykernel
 jupyter
 matplotlib
---extra-index-url https://download.pytorch.org/whl/cu116
-torch
-torchvision
+lightning[extra]
+pytorch-lightning
 pyyaml
-setuptools
-scipy
 scikit-learn
+scipy
+setuptools
 split-folders
+torch
 torchsummary
+torchvision
 ypstruct
