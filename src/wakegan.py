@@ -37,7 +37,6 @@ class WakeGAN:
         self.lr: float = config["train"]["lr"]
         self.minibatch_size: int = config["train"]["batch_size"]
         self.epochs: int = config["train"]["num_epochs"]
-        self.f_adv_gen: int = config["train"]["f_adv_gen"]
         self.f_mse: int = config["train"]["f_mse"]
         self.betas: tuple = (0.5, 0.999)
         self.workers: int = config["train"]["num_workers"]
@@ -284,7 +283,7 @@ class WakeGAN:
         loss_adv = self.criterion(pred_synth, torch.ones_like(pred_synth))
         loss_mse = self.mse(images, synths)
 
-        loss = self.f_adv_gen * loss_adv + self.f_mse * loss_mse
+        loss = (1 - self.f_mse) * loss_adv + self.f_mse * loss_mse
         self.optimizer["generator"].zero_grad()
         loss.backward()
         self.optimizer["generator"].step()
