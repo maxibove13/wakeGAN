@@ -32,6 +32,7 @@ class Discriminator(torch.nn.Module):
             torch.nn.Linear(features_d * 256, 1),  # (N, 1)
             torch.nn.Sigmoid(),
         )
+        self.initialize_weights()
 
     # x is the image, mu is the inflow velocity (condition)
     def forward(self, x, mu):
@@ -40,6 +41,17 @@ class Discriminator(torch.nn.Module):
         x_emb = torch.cat((x, mu), 1)
         x_emb = self.disc(x_emb)
         return x_emb
+
+    def initialize_weights(self):
+        gain_conv2d = torch.nn.init.calculate_gain("conv2d")
+        gain_linear = torch.nn.init.calculate_gain("linear")
+        for m in self.modules():
+            if isinstance(m, torch.nn.Conv2d):
+                torch.nn.init.xavier_normal_(m.weight, gain=gain_conv2d)
+                torch.nn.init.constant_(m.bias, 0)
+            elif isinstance(m, torch.nn.Linear):
+                torch.nn.init.xavier_normal_(m.weight, gain=gain_linear)
+                torch.nn.init.constant_(m.bias, 0)
 
 
 class Generator(torch.nn.Module):
@@ -65,12 +77,25 @@ class Generator(torch.nn.Module):
             ),  # (N,C,W,H), (472,2,64,64)
             torch.nn.Tanh(),  # [-1, 1]
         )
+        self.initialize_weights()
 
     def forward(self, x):  # (N,C,H)
         x = self.linear(x)  # (N,C,H*64/C)
         x = torch.reshape(x, (x.shape[0], self.height, 8, 8))  # (N,H,8,8)
         x = self.gen(x)  # (N,C,W,H)
         return x
+
+    def initialize_weights(self):
+        gain_leaky = torch.nn.init.calculate_gain("leaky_relu", 1e-2)
+        gain_linear = torch.nn.init.calculate_gain("linear")
+        gain_convtrans = torch.nn.init.calculate_gain("conv_transpose2d")
+        for m in self.modules():
+            if isinstance(m, torch.nn.ConvTranspose2d):
+                torch.nn.init.xavier_normal_(m.weight, gain=gain_convtrans)
+                torch.nn.init.constant_(m.bias, 0)
+            elif isinstance(m, torch.nn.Linear):
+                torch.nn.init.xavier_normal_(m.weight, gain=gain_linear)
+                torch.nn.init.constant_(m.bias, 0)
 
 
 def main():

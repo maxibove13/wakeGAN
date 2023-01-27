@@ -255,4 +255,20 @@ Where $u$ is the state of the system while the differential operator $P$ (parame
 The flow parameters arising from governing equations, the domain geometry and the boundary conditions are denoted as $\mu$.
 Given a specific value of $\mu$ the flow field in the domain \Omega, denoted as $U$, can be obtained by solving the above equation numerically.
 
-Zhang & Zhao, develop a surrogate modeling method to approximate the mapping between $\mu$ and $U$ so that fast and accurate predictions of $U$ can be achieved.
+Zhang & Zhao, develop a surrogate modeling method to approximate the mapping between \mu and U so that fast and accurate predictions of U can be achieved.
+
+# Reproducibility
+
+In order to make the results reproducible, a random seed has to be set at the beginning of the code:
+
+```python
+torch.manual_seed(42)
+```
+
+It is also recommended to force PyTorch to check that all operations are deterministic:
+
+```python
+torch.use_deterministic_algorithms(True)
+```
+
+If using a GPU it is necessary to set the `CUBLAS_WORKSPACE_CONFIG` environment variable to `:4096:8` or `:16:8` as suggested in the [cuBLAS](https://docs.nvidia.com/cuda/cublas/index.html#cublasApi_reproducibility) documentation.

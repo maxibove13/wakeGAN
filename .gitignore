@@ -6,6 +6,7 @@ data/aux/**
 models/*
 
 figures/monitor/*
+figures/evaluation/*
 figures/wf_slices
 
 *.log
@@ -15,6 +16,8 @@ figures/wf_slices
 *pyc
 *swp
 .vscode
+metrics.json
+dvc_run.sh
 
 dvc-remote-data*
 *notes.md

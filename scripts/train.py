@@ -14,7 +14,7 @@ import os
 
 import yaml
 
-from scripts.evaluate import evaluate
+from scripts import evaluate
 from src.wakegan import WakeGAN
 
 logging.basicConfig(
@@ -40,7 +40,7 @@ def main():
         wakegan.load_pretrained_models()
     wakegan.train()
 
-    evaluate()
+    evaluate.evaluate()
 
 
 if __name__ == "__main__":

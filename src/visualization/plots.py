@@ -20,14 +20,15 @@ from src.data.dataset import WakeGANDataset
 class MetricsPlotter:
     def __init__(self, epochs: int, clim: tuple):
         self.epochs = epochs
-        self.fig, self.axs = plt.subplots(2, 1, dpi=300)
+        self.fig, self.axs = plt.subplots(3, 1, dpi=300)
 
-        self.axs[0].set(ylabel="loss")
-        self.axs[0].xaxis.set_ticklabels([])
+        for ax in [self.axs[0], self.axs[1]]:
+            ax.set(ylabel="loss")
+            ax.xaxis.set_ticklabels([])
 
-        self.axs[1].set(xlabel="epochs")
-        self.axs[1].set(ylabel="RMSE [ms$^{-1}$]")
-        sec_ax1 = self.axs[1].secondary_yaxis(
+        self.axs[2].set(xlabel="epochs")
+        self.axs[2].set(ylabel="RMSE [ms$^{-1}$]")
+        sec_ax1 = self.axs[2].secondary_yaxis(
             "right",
             functions=(
                 lambda x: x / clim[0][1] * 100,
@@ -40,7 +41,7 @@ class MetricsPlotter:
             ax.set_xlim(1, self.epochs - 1)
             ax.xaxis.set_major_locator(MaxNLocator(integer=True))
             ax.grid(visible=True)
-        self.axs[1].set_ylim(0, 1)
+        self.axs[2].set_ylim(0, 1)
 
     def plot(self, loss: Dict, rmse: Dict, epoch: int):
         """Plot losses and RMSE for train and dev sets"""
@@ -48,18 +49,25 @@ class MetricsPlotter:
 
         self.axs[0].plot(x, loss["disc"], label="Discriminator loss", color="k")
         self.axs[0].plot(
-            x, loss["gen_adv"], label="Generator adversarial loss", color="r"
+            x,
+            np.array(loss["gen_adv"]) + np.array(loss["gen_mse"]),
+            label="Generator loss",
+            color="r",
         )
-        self.axs[0].plot(x, loss["gen_mse"], label="Generator mse loss", color="C1")
 
         self.axs[1].plot(
+            x, loss["gen_adv"], label="Generator adversarial loss", color="r"
+        )
+        self.axs[1].plot(x, loss["gen_mse"], label="Generator MSE loss", color="C1")
+
+        self.axs[2].plot(
             x, rmse["train"], label="RMSE Ux (Training)", color="g", ls="-"
         )
-        self.axs[1].plot(x, rmse["dev"], label="RMSE Ux (Testing)", color="g", ls="--")
+        self.axs[2].plot(x, rmse["dev"], label="RMSE Ux (Testing)", color="g", ls="--")
 
         if epoch == 0:
             for i, ax in enumerate(self.axs):
-                self.axs[1].legend(
+                ax.legend(
                     loc="upper right" if i == 1 else "lower right", fontsize="x-small"
                 )
 
@@ -254,7 +262,7 @@ class FlowImagePlotter:
 
 
 class ProfilesPlotter:
-    def __init__(self, wt_d: float, limits: tuple, size: tuple):
+    def __init__(self, wt_d: float, limits: tuple, size: tuple, metadata: dict):
         self.fig = plt.figure(figsize=(10, 25), dpi=300)
         self.wt_d = wt_d
         self.grid = ImageGrid(
@@ -274,6 +282,10 @@ class ProfilesPlotter:
 
         self.x = np.linspace(x_left, x_right, num=size[0])
         self.y = np.linspace(y_bottom, y_top, num=size[0])
+
+        self.prec = [m["prec"] for m in metadata]
+        self.angle = [m["angle"] for m in metadata]
+        self.pos = [m["pos"] for m in metadata]
 
     def plot(self, images: list):
 
@@ -301,7 +313,11 @@ class ProfilesPlotter:
                 if i == len(self.grid.axes_row) - 1 and j == 0:
                     ax.set_xlabel("$U_x$ [ms$^{-1}$]", fontsize=16)
                 if j == 0:
-                    ax.set_ylabel(f"$y/D$ - Case #{i+1}", fontsize=16)
+                    m_s = "ms$^{-1}$"
+                    ax.set_ylabel(
+                        f"$y/D$ -#{i+1}, prec.: {self.prec[i]} {m_s}, {self.angle[i]}°, {self.pos[i]}",
+                        fontsize=14,
+                    )
 
         self.fig.legend(
             handles=[real_curve, synth_curve],
@@ -325,7 +341,7 @@ def plot_histogram(dataset: WakeGANDataset):
         (len(dataset), dataset.channels, dataset.size[0], dataset.size[1])
     )
     images_norm = images_unnorm.clone()
-    for c, (image, inflow) in enumerate(dataset):
+    for c, (image, _, _) in enumerate(dataset):
         images_norm[c] = image
         images_unnorm[c] = dataset.unnormalize_image(
             dataset.norm_type, dataset.norm_params, image
