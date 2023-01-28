@@ -13,6 +13,7 @@ import logging
 import os
 import time
 
+import numpy as np
 import torch
 import yaml
 
@@ -84,15 +85,18 @@ def evaluate():
 
     images = images.squeeze()
     synths = synths.squeeze()
+
+    # torch.manual_seed()
+    indices = torch.randperm(len(dataset))[0:4]
     images_to_plot = [
-        images[0],
-        synths[0],
-        images[1],
-        synths[1],
-        images[2],
-        synths[2],
-        images[3],
-        synths[3],
+        images[indices[0]],
+        synths[indices[0]],
+        images[indices[1]],
+        synths[indices[1]],
+        images[indices[2]],
+        synths[indices[2]],
+        images[indices[3]],
+        synths[indices[3]],
     ]
 
     flow_image_plotter = FlowImagePlotter(
@@ -108,6 +112,8 @@ def evaluate():
     )
     profiles_plotter.plot(images_to_plot)
 
+    print(rmse.item())
+    print(rmse.item() / config["data"]["figures"]["clim_ux"][1] * 100)
     _save_rmse(rmse.item())
 
     toc = time.time()

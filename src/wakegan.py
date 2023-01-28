@@ -160,7 +160,9 @@ class WakeGAN:
         )
 
         plotters = {
-            "metrics": plots.MetricsPlotter(self.epochs, self.dataset["train"].clim),
+            "metrics": plots.MetricsPlotter(
+                self.epochs, self.dataset["train"].clim, self.f_mse
+            ),
             "flow": plots.FlowImagePlotter(self.channels, self.dataset["train"].clim),
         }
 

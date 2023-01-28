@@ -18,9 +18,10 @@ from src.data.dataset import WakeGANDataset
 
 
 class MetricsPlotter:
-    def __init__(self, epochs: int, clim: tuple):
+    def __init__(self, epochs: int, clim: tuple, f_mse: float):
         self.epochs = epochs
         self.fig, self.axs = plt.subplots(3, 1, dpi=300)
+        self.f_mse = f_mse
 
         for ax in [self.axs[0], self.axs[1]]:
             ax.set(ylabel="loss")
@@ -50,7 +51,10 @@ class MetricsPlotter:
         self.axs[0].plot(x, loss["disc"], label="Discriminator loss", color="k")
         self.axs[0].plot(
             x,
-            np.array(loss["gen_adv"]) + np.array(loss["gen_mse"]),
+            np.array(
+                (1 - self.f_mse) * loss["gen_adv"] + (self.f_mse) * loss["gen_mse"]
+            )
+            + np.array(loss["gen_mse"]),
             label="Generator loss",
             color="r",
         )
@@ -68,7 +72,7 @@ class MetricsPlotter:
         if epoch == 0:
             for i, ax in enumerate(self.axs):
                 ax.legend(
-                    loc="upper right" if i == 1 else "lower right", fontsize="x-small"
+                    loc="upper right" if i == 1 else "upper right", fontsize="x-small"
                 )
 
         self.fig.savefig(os.path.join("figures", "monitor", "metrics.png"))
