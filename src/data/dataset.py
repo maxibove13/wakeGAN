@@ -22,12 +22,10 @@ class WakeGANDataset:
         self,
         data_dir: str,
         config: Dict,
-        dataset_type: str,
         norm_params: Dict = None,
         save_norm_params: bool = False,
     ):
 
-        self.type = dataset_type
         self.data_subdir = [os.path.join(data_dir, "ux")]
         self.channels = config["channels"]
         self.original_size = config["original_size"]
@@ -174,11 +172,6 @@ class WakeGANDataset:
             torch.max(images),
         )
 
-    # def set_loader(self, batch_size: int, num_workers: int, shuffle: bool = True):
-    #     self.loader = torch.utils.data.DataLoader(
-    #         self, batch_size=batch_size, num_workers=num_workers, shuffle=shuffle
-    #     )
-
     @staticmethod
     def rescale_back_to_velocity(tensor: Tensor, clim: list) -> Tensor:
         return tensor * (clim[0][1] - clim[0][0]) + clim[0][0]
@@ -197,6 +190,14 @@ class WakeGANDataset:
         a, b = range
         return (x - a) * (x_max - x_min) / (b - a) + x_min
 
+    @staticmethod
+    def transform_back(
+        image: Tensor, norm_type: "str", norm_params: Dict, clim: tuple
+    ) -> Tensor:
+        image = WakeGANDataset.unnormalize_image(norm_type, norm_params, image)
+        image = WakeGANDataset.rescale_back_to_velocity(image, clim)
+        return image
+
 
 class WakeGANDataModule(pl.LightningDataModule):
     def __init__(self, config):
@@ -214,13 +215,11 @@ class WakeGANDataModule(pl.LightningDataModule):
         self.dataset_train = WakeGANDataset(
             self.data_dir["train"],
             self.data_config,
-            "train",
             save_norm_params=True if self.save else False,
         )
         self.dataset_dev = WakeGANDataset(
             self.data_dir["dev"],
             self.data_config,
-            "dev",
             save_norm_params=True if self.save else False,
         )
         self.norm_params = self.dataset_train.norm_params

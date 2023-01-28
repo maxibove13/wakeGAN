@@ -49,6 +49,11 @@ def main():
     # wakegan.train()
 
     # evaluate.evaluate()
+    dataset_train = dataset.WakeGANDataset(
+        data_dir=os.path.join("data", "preprocessed", "tracked", "train"),
+        config=config["data"],
+        save_norm_params=True if config["models"]["save"] else False,
+    )
 
     trainer = pl.Trainer(
         accelerator="gpu",
@@ -56,10 +61,15 @@ def main():
         log_every_n_steps=10,
         max_epochs=config["train"]["num_epochs"],
     )
-    data = dataset.WakeGANDataModule(config)
-    model = LitWakeGAN(config, data.norm_params)
 
-    trainer.fit(model, data)
+    datamodule = dataset.WakeGANDataModule(config)
+
+    model = LitWakeGAN(
+        config,
+        dataset_train.norm_params,
+    )
+
+    trainer.fit(model, datamodule)
 
 
 if __name__ == "__main__":

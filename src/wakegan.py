@@ -411,7 +411,17 @@ class LitWakeGAN(pl.LightningModule):
         if optimizer_idx == 1:
             loss = self._train_generator(images, inflows)
 
-        mse = self._calculate_batch_mse(images, self.synths, self.dataset["train"])
+        mse = 0
+        for (img, synth) in zip(images, self.synths):
+            img = WakeGANDataset.transform_back(
+                img, self.norm["type"], self.norm["params"], self.clim
+            )
+            synth = WakeGANDataset.transform_back(
+                synth, self.norm["type"], self.norm["params"], self.clim
+            )
+            mse += utils.calculate_mse(
+                img.flatten(), synth.flatten(), np.prod(self.size)
+            )
 
         self.log("mse", mse, prog_bar=True)
 
@@ -513,24 +523,3 @@ class LitWakeGAN(pl.LightningModule):
         self.feat_disc = config["models"]["f_d"]
 
         self.rmse = {"train": [], "dev": []}
-
-    def _calculate_batch_mse(
-        self, images: Tensor, synths: Tensor, dataset: WakeGANDataset
-    ) -> Tensor:
-        mse = 0
-        for (img, synth) in zip(images, synths):
-            img = self.transform_back(img)
-            synth = self.transform_back(synth)
-
-            mse += utils.calculate_mse(
-                img.flatten(), synth.flatten(), np.prod(self.size)
-            )
-        mse /= len(images)
-        return mse
-
-    def transform_back(self, image: Tensor) -> Tensor:
-        image = WakeGANDataset.unnormalize_image(
-            self.norm.type, self.norm.params, image
-        )
-        image = WakeGANDataset.rescale_back_to_velocity(image, self.clim)
-        return image
