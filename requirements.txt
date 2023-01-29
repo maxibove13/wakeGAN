@@ -16,6 +16,7 @@ scipy
 setuptools
 split-folders
 torch
+torchmetrics
 torchsummary
 torchvision
 ypstruct

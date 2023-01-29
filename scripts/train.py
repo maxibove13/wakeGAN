@@ -11,6 +11,7 @@ __date__ = "12/22"
 import logging
 import time
 import os
+from argparse import ArgumentParser
 
 import yaml
 
@@ -20,8 +21,7 @@ from src.data import dataset
 import pytorch_lightning as pl
 from torch import set_float32_matmul_precision
 
-from argparse import ArgumentParser
-
+from src.utils import callbacks
 
 logging.basicConfig(
     format="%(message)s",
@@ -58,16 +58,14 @@ def main():
     trainer = pl.Trainer(
         accelerator="gpu",
         devices=1,
-        log_every_n_steps=10,
+        log_every_n_steps=1,
         max_epochs=config["train"]["num_epochs"],
+        callbacks=[callbacks.LoggingCallback(logger), callbacks.PlottingCallback()],
     )
 
     datamodule = dataset.WakeGANDataModule(config)
 
-    model = LitWakeGAN(
-        config,
-        dataset_train.norm_params,
-    )
+    model = LitWakeGAN(config, dataset_train.norm_params)
 
     trainer.fit(model, datamodule)
 

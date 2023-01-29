@@ -11,8 +11,7 @@ from typing import Dict, Tuple
 
 
 from torch import Tensor
-from torchvision import io
-from torchvision import transforms
+from torchvision import io, transforms, utils
 import pytorch_lightning as pl
 import torch
 
@@ -189,6 +188,14 @@ class WakeGANDataset:
     ) -> Tensor:
         a, b = range
         return (x - a) * (x_max - x_min) / (b - a) + x_min
+
+    @staticmethod
+    def transform_back_batch(
+        images: Tensor, norm_type: "str", norm_params: Dict, clim: tuple
+    ) -> Tensor:
+        for im in images:
+            im = WakeGANDataset.transform_back(im, norm_type, norm_params, clim)
+        return images
 
     @staticmethod
     def transform_back(

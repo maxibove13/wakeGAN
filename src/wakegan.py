@@ -14,6 +14,7 @@ from torch.utils.data.dataloader import DataLoader
 import numpy as np
 import pytorch_lightning as pl
 import torch
+import torchmetrics
 
 from src.data.dataset import WakeGANDataset
 
@@ -37,7 +38,7 @@ class WakeGAN:
         self.device_name: str = config["train"]["device"]
         self.lr: float = config["train"]["lr"]
         self.minibatch_size: int = config["train"]["batch_size"]
-        self.epochs: int = config["train"]["num_epochs"]
+
         self.f_mse: int = config["train"]["f_mse"]
         self.betas: tuple = (0.5, 0.999)
         self.workers: int = config["train"]["num_workers"]
@@ -113,7 +114,7 @@ class WakeGAN:
 
     def define_loss_and_optimizer(self) -> None:
         self.criterion = torch.nn.BCELoss()
-        self.mse = torch.nn.MSELoss()
+        self.mse_train = torch.nn.MSELoss()
 
         self.optimizer = {
             "generator": torch.optim.Adam(
@@ -282,7 +283,7 @@ class WakeGAN:
         pred_synth = self.discriminator(synths, inflows)
 
         loss_adv = self.criterion(pred_synth, torch.ones_like(pred_synth))
-        loss_mse = self.mse(images, synths)
+        loss_mse = self.mse_train(images, synths)
 
         loss = (1 - self.f_mse) * loss_adv + self.f_mse * loss_mse
         self.optimizer["generator"].zero_grad()
@@ -393,51 +394,85 @@ class LitWakeGAN(pl.LightningModule):
             self.channels, self.feat_disc, self.size[0]
         )
 
-        self.criterion = torch.nn.BCELoss()
-        self.mse = torch.nn.MSELoss()
+        self.loss = {
+            "bce": torch.nn.BCELoss(),
+            "mse": torch.nn.MSELoss(),
+        }
+        self.mse_train = torchmetrics.MeanSquaredError(squared=False)
+        self.mse_dev = torchmetrics.MeanSquaredError(squared=False)
 
     def forward(self, z):
         return self.generator(z)
 
     def training_step(self, batch, batch_idx, optimizer_idx):
 
-        images, inflows, _ = batch
+        self.reals, inflows, _ = batch
 
         self.synths = self(inflows)
 
         if optimizer_idx == 0:
-            loss = self._train_discriminator(inflows, images)
+            loss = self._train_discriminator(inflows, self.reals)
 
         if optimizer_idx == 1:
-            loss = self._train_generator(images, inflows)
+            loss = self._train_generator(self.reals, inflows)
 
-        mse = 0
-        for (img, synth) in zip(images, self.synths):
-            img = WakeGANDataset.transform_back(
-                img, self.norm["type"], self.norm["params"], self.clim
-            )
-            synth = WakeGANDataset.transform_back(
-                synth, self.norm["type"], self.norm["params"], self.clim
-            )
-            mse += utils.calculate_mse(
-                img.flatten(), synth.flatten(), np.prod(self.size)
-            )
+        self.images = {
+            "real": WakeGANDataset.transform_back(
+                self.reals.clone().squeeze(),
+                self.norm["type"],
+                self.norm["params"],
+                self.clim,
+            ),
+            "synth": WakeGANDataset.transform_back(
+                self.synths.clone().squeeze(),
+                self.norm["type"],
+                self.norm["params"],
+                self.clim,
+            ),
+        }
 
-        self.log("mse", mse, prog_bar=True)
+        self.mse_train(
+            self.images["real"],
+            self.images["synth"],
+        )
 
-        return loss
+        self.log(
+            "mse_train_step",
+            self.mse_train,
+            prog_bar=True,
+        )
 
-    # def training_epoch_end(self, training_step_outputs):
-    #     all_preds = torch.stack(training_step_outputs)
+        return {"loss": loss}
 
     def validation_step(self, batch, batch_idx):
-        images, inflows, _ = batch
-
+        reals, inflows, _ = batch
         synths = self(inflows)
 
-        # running_mse = self._calculate_batch_mse(images, synths, self.dataset["val"])
+        self.images_dev = {
+            "real": WakeGANDataset.transform_back(
+                reals.squeeze(), self.norm["type"], self.norm["params"], self.clim
+            ),
+            "synth": WakeGANDataset.transform_back(
+                synths.squeeze(), self.norm["type"], self.norm["params"], self.clim
+            ),
+        }
 
-        # self.log("val_mse", running_mse)
+        self.mse_dev(
+            self.images_dev["real"],
+            self.images_dev["synth"],
+        )
+
+        self.log(
+            "mse_dev_step",
+            self.mse_dev,
+            prog_bar=True,
+        )
+
+    def training_epoch_end(self, outputs):
+        self.log("rmse_train_epoch", self.mse_train, prog_bar=True)
+
+    def validation_epoch_end(self, outputs):
+        self.log("rmse_dev_epoch", self.mse_dev, prog_bar=True)
 
     def predict_step(self, batch, batch_idx):
         inflows, _ = batch
@@ -458,7 +493,7 @@ class LitWakeGAN(pl.LightningModule):
             opt_d, T_max=50, eta_min=1e-7, verbose=False
         )
 
-        return [opt_g, opt_d], [lr_scheduler_g, lr_scheduler_d]
+        return [opt_d, opt_g], [lr_scheduler_d, lr_scheduler_g]
 
     def _train_discriminator(self, inflows, images) -> None:
         """Train Discriminator: max log(D(x)) + log(1 - D(G(z)))"""
@@ -466,12 +501,12 @@ class LitWakeGAN(pl.LightningModule):
         pred_real = self.discriminator(images, inflows)
         pred_synth = self.discriminator(self.synths, inflows)
 
-        loss_real = self.criterion(pred_real, torch.ones_like(pred_real))
-        loss_synth = self.criterion(pred_synth, torch.zeros_like(pred_synth))
+        loss_real = self.loss["bce"](pred_real, torch.ones_like(pred_real))
+        loss_synth = self.loss["bce"](pred_synth, torch.zeros_like(pred_synth))
 
         d_loss = loss_real + loss_synth
 
-        self.log("d_loss", d_loss, prog_bar=True)
+        self.log("d_loss", d_loss, on_step=True, on_epoch=True, prog_bar=True)
 
         return d_loss
 
@@ -480,12 +515,12 @@ class LitWakeGAN(pl.LightningModule):
 
         pred_synth = self.discriminator(self.synths, inflows)
 
-        loss_adv = self.criterion(pred_synth, torch.ones_like(pred_synth))
-        loss_mse = self.mse(images, self.synths)
+        loss_adv = self.loss["bce"](pred_synth, torch.ones_like(pred_synth))
+        loss_mse = self.loss["mse"](images, self.synths)
 
         g_loss = (1 - self.f_mse) * loss_adv + self.f_mse * loss_mse
 
-        self.log("g_loss", g_loss, prog_bar=True)
+        self.log("g_loss", g_loss, on_step=False, on_epoch=True, prog_bar=True)
 
         return g_loss
 
@@ -511,15 +546,5 @@ class LitWakeGAN(pl.LightningModule):
         self.betas: tuple = (0.5, 0.999)
         self.workers: int = config["train"]["num_workers"]
 
-        self.load = config["models"]["load"]
-        self.save = config["models"]["save"]
-        self.save_every = config["models"]["save_every"]
-
-        self.net_name = {}
-        self.net_name["generator"] = config["models"]["name_gen"]
-        self.net_name["discriminator"] = config["models"]["name_disc"]
-
         self.feat_gen = config["models"]["f_g"]
         self.feat_disc = config["models"]["f_d"]
-
-        self.rmse = {"train": [], "dev": []}
