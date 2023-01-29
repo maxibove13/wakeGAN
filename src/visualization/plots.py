@@ -14,7 +14,6 @@ import torch
 
 from mpl_toolkits.axes_grid1 import ImageGrid
 from matplotlib.ticker import MaxNLocator
-from src.data.dataset import WakeGANDataset
 
 
 class MetricsPlotter:
@@ -332,7 +331,7 @@ class ProfilesPlotter:
         )
 
 
-def plot_histogram(dataset: WakeGANDataset):
+def plot_histogram(dataset):
     """
     Plot histogram of an image dataset (normalize and unnormalized) in order to see the distribution of pixel values
     """

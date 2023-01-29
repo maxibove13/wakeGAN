@@ -9,19 +9,17 @@ __status__ = "Development"
 __date__ = "12/22"
 
 import logging
-import time
 import os
-from argparse import ArgumentParser
+import time
 
+from pytorch_lightning.callbacks import ModelCheckpoint
+import pytorch_lightning as pl
+import torch
 import yaml
 
-from scripts import evaluate
-from src.wakegan import LitWakeGAN
 from src.data import dataset
-import pytorch_lightning as pl
-from torch import set_float32_matmul_precision
-
 from src.utils import callbacks
+from src.wakegan import WakeGAN
 
 logging.basicConfig(
     format="%(message)s",
@@ -31,52 +29,58 @@ logging.basicConfig(
 )
 logger = logging.getLogger("train")
 
-set_float32_matmul_precision("medium")
+torch.set_float32_matmul_precision("medium")
 
 
 def main():
     with open("config.yaml") as file:
         config = yaml.safe_load(file)
 
-    # wakegan = WakeGAN(config, logger)
+    dataset, datamodule, trainer = init(config)
 
-    # wakegan.set_device()
-    # wakegan.preprocess_dataset()
-    # wakegan.initialize_models()
-    # wakegan.define_loss_and_optimizer()
-    # if wakegan.load:
-    #     wakegan.load_pretrained_models()
-    # wakegan.train()
+    model = WakeGAN(config, dataset.norm_params)
 
-    # evaluate.evaluate()
+    trainer.fit(model, datamodule)
+    trainer.test(model, datamodule.val_dataloader(), ckpt_path="best")
+
+
+def init(config):
+
+    checkpoint_callback = ModelCheckpoint(
+        dirpath=None,
+        save_top_k=1,
+        monitor="rmse_dev_epoch",
+        mode="min",
+        filename="wakegan-{epoch}-{rmse_dev_epoch:.2f}",
+    )
+
     dataset_train = dataset.WakeGANDataset(
         data_dir=os.path.join("data", "preprocessed", "tracked", "train"),
         config=config["data"],
+        dataset_type="train",
         save_norm_params=True if config["models"]["save"] else False,
-    )
-
-    trainer = pl.Trainer(
-        accelerator="gpu",
-        devices=1,
-        log_every_n_steps=1,
-        max_epochs=config["train"]["num_epochs"],
-        callbacks=[callbacks.LoggingCallback(logger), callbacks.PlottingCallback()],
     )
 
     datamodule = dataset.WakeGANDataModule(config)
 
-    model = LitWakeGAN(config, dataset_train.norm_params)
+    trainer = pl.Trainer(
+        default_root_dir="logs",
+        accelerator="gpu",
+        devices=1,
+        log_every_n_steps=1,
+        max_epochs=config["train"]["num_epochs"],
+        callbacks=[
+            callbacks.PlottingCallback(),
+            callbacks.LoggingCallback(logger),
+            checkpoint_callback,
+        ],
+    )
 
-    trainer.fit(model, datamodule)
+    return dataset_train, datamodule, trainer
 
 
 if __name__ == "__main__":
-    # parser = ArgumentParser()
-    # parser = pl.Trainer.add_argparse_args(parser)
-    # args = parser.parse_args()
-
     tic = time.time()
     main()
     toc = time.time()
-
     logger.info(f"Training duration: {((toc-tic)/60):.2f} m ")

@@ -11,9 +11,11 @@ from typing import Dict, Tuple
 
 
 from torch import Tensor
-from torchvision import io, transforms, utils
+from torchvision import io, transforms
 import pytorch_lightning as pl
 import torch
+
+from src.visualization import plots
 
 
 class WakeGANDataset:
@@ -21,10 +23,12 @@ class WakeGANDataset:
         self,
         data_dir: str,
         config: Dict,
+        dataset_type: "str",
         norm_params: Dict = None,
         save_norm_params: bool = False,
     ):
 
+        self.type = dataset_type
         self.data_subdir = [os.path.join(data_dir, "ux")]
         self.channels = config["channels"]
         self.original_size = config["original_size"]
@@ -87,6 +91,10 @@ class WakeGANDataset:
 
         return image
 
+    @staticmethod
+    def rescale_back_to_velocity(tensor: Tensor, clim: list) -> Tensor:
+        return tensor * (clim[0][1] - clim[0][0]) + clim[0][0]
+
     def _normalize_image(self, image: Tensor):
         if self.norm_type == "min_max":
             image = self._rescale_to_range(
@@ -148,7 +156,7 @@ class WakeGANDataset:
             else:
                 raise ValueError(f"Normalization type {self.norm_type} not supported")
             if save:
-                with open(os.path.join("data", "norm_params.json"), "w") as f:
+                with open(os.path.join("data", "aux", "norm_params.json"), "w") as f:
                     json.dump(norm_params, f)
 
         return norm_params
@@ -170,10 +178,6 @@ class WakeGANDataset:
             torch.min(images),
             torch.max(images),
         )
-
-    @staticmethod
-    def rescale_back_to_velocity(tensor: Tensor, clim: list) -> Tensor:
-        return tensor * (clim[0][1] - clim[0][0]) + clim[0][0]
 
     @staticmethod
     def _rescale_to_range(
@@ -222,14 +226,20 @@ class WakeGANDataModule(pl.LightningDataModule):
         self.dataset_train = WakeGANDataset(
             self.data_dir["train"],
             self.data_config,
-            save_norm_params=True if self.save else False,
-        )
-        self.dataset_dev = WakeGANDataset(
-            self.data_dir["dev"],
-            self.data_config,
+            "train",
             save_norm_params=True if self.save else False,
         )
         self.norm_params = self.dataset_train.norm_params
+        self.dataset_dev = WakeGANDataset(
+            self.data_dir["dev"],
+            self.data_config,
+            "dev",
+            norm_params=self.norm_params,
+            save_norm_params=True if self.save else False,
+        )
+
+        plots.plot_histogram(self.dataset_train)
+        plots.plot_histogram(self.dataset_dev)
 
     def train_dataloader(self):
         return torch.utils.data.DataLoader(
@@ -241,7 +251,7 @@ class WakeGANDataModule(pl.LightningDataModule):
 
     def val_dataloader(self):
         return torch.utils.data.DataLoader(
-            self.dataset_train,
+            self.dataset_dev,
             batch_size=self.batch_size,
             num_workers=self.num_workers,
             shuffle=False,
