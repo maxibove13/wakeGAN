@@ -142,6 +142,7 @@ class PlottingCallback(callbacks.Callback):
             ),
         }
 
+        print(pl_module.metadatas_test["prec"])
         images_to_plot = [
             pl_module.images_test["real"][0].detach().cpu(),
             pl_module.images_test["synth"][0].detach().cpu(),

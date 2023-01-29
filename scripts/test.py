@@ -39,7 +39,7 @@ def main():
 
 
 def init(config: Dict):
-    with open(os.path.join("data", "norm_params.json")) as f:
+    with open(os.path.join("data", "aux", "norm_params.json")) as f:
         norm_params = json.load(f)
 
     trainer = pl.Trainer(
