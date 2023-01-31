@@ -127,6 +127,9 @@ class PlottingCallback(callbacks.Callback):
                 }
             )
 
+        seed = 0
+        torch.manual_seed(seed)
+        indices = torch.randperm(len(pl_module.images_test["real"]))
         self.plotters = {
             "flow": plots.FlowImagePlotter(
                 pl_module.channels,
@@ -138,21 +141,14 @@ class PlottingCallback(callbacks.Callback):
                 wt_d=pl_module.wt_d,
                 limits=pl_module.limits,
                 size=pl_module.size,
-                metadata=mtdts[0:4],
+                metadata=[mtdts[i] for i in indices[:4]],
             ),
         }
 
-        print(pl_module.metadatas_test["prec"])
-        images_to_plot = [
-            pl_module.images_test["real"][0].detach().cpu(),
-            pl_module.images_test["synth"][0].detach().cpu(),
-            pl_module.images_test["real"][1].detach().cpu(),
-            pl_module.images_test["synth"][1].detach().cpu(),
-            pl_module.images_test["real"][2].detach().cpu(),
-            pl_module.images_test["synth"][2].detach().cpu(),
-            pl_module.images_test["real"][3].detach().cpu(),
-            pl_module.images_test["synth"][3].detach().cpu(),
-        ]
+        images_to_plot = []
+        for i in indices[:4]:
+            images_to_plot.append(pl_module.images_test["real"][i].detach().cpu())
+            images_to_plot.append(pl_module.images_test["synth"][i].detach().cpu())
 
         self.plotters["flow"].plot(images_to_plot)
         self.plotters["profiles"].plot(images_to_plot)

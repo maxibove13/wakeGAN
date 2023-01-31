@@ -67,7 +67,7 @@ class MetricsPlotter:
         if epoch == 0:
             for i, ax in enumerate(self.axs):
                 ax.legend(
-                    loc="upper right" if i == 1 else "lower right", fontsize="x-small"
+                    loc="upper right" if i == 1 else "upper right", fontsize="x-small"
                 )
 
         self.fig.savefig(os.path.join("figures", "monitor", "metrics.png"))
