@@ -12,6 +12,8 @@ figures/wf_slices
 logs
 lightning_logs
 
+.neptune
+
 *.log
 
 *.egg-info

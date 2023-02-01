@@ -40,18 +40,18 @@ class MetricsPlotter:
             ax.set_xlim(1, self.epochs - 1)
             ax.xaxis.set_major_locator(MaxNLocator(integer=True))
             ax.grid(visible=True)
-        self.axs[2].set_ylim(0, 1)
+        self.axs[1].set_ylim(0, 0.005)
+        self.axs[2].set_ylim(0, 0.8)
 
     def plot(self, loss: Dict, rmse: Dict, epoch: int):
         """Plot losses and RMSE for train and dev sets"""
         x = np.arange(0, epoch + 1)
 
-        self.axs[0].plot(x, loss["disc"], label="Discriminator loss", color="k")
         self.axs[0].plot(
-            x,
-            np.array(loss["gen_adv"]) + np.array(loss["gen_mse"]),
-            label="Generator loss",
-            color="r",
+            x, loss["disc_synth"], label="Discriminator synth loss", color="C1"
+        )
+        self.axs[0].plot(
+            x, loss["disc_real"], label="Discriminator real loss", color="C0"
         )
 
         self.axs[1].plot(

@@ -12,7 +12,8 @@ import logging
 import os
 import time
 
-from pytorch_lightning.callbacks import ModelCheckpoint
+from pytorch_lightning.callbacks import ModelCheckpoint, BatchSizeFinder
+from pytorch_lightning.loggers import NeptuneLogger, TensorBoardLogger
 import pytorch_lightning as pl
 import torch
 import yaml
@@ -28,6 +29,14 @@ logging.basicConfig(
     filemode="w",
 )
 logger = logging.getLogger("train")
+
+neptune_logger = NeptuneLogger(
+    project="idatha/wakegan",
+    api_key="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiIyNWQ5YjJjZi05OTE1LTRhNWEtODdlZC00MWRlMzMzNGMwMzYifQ==",
+    log_model_checkpoints=False,
+)
+tb_logger = TensorBoardLogger(save_dir="logs/")
+
 
 torch.set_float32_matmul_precision("medium")
 
@@ -46,6 +55,8 @@ def main():
 
 def init(config):
 
+    neptune_logger.log_hyperparams(params=config)
+
     checkpoint_callback = ModelCheckpoint(
         dirpath=None,
         save_top_k=1,
@@ -53,6 +64,8 @@ def init(config):
         mode="min",
         filename="wakegan-{epoch}-{rmse_dev_epoch:.2f}",
     )
+
+    batchsize_finder = BatchSizeFinder()
 
     dataset_train = dataset.WakeGANDataset(
         data_dir=os.path.join("data", "preprocessed", "tracked", "train"),
@@ -69,10 +82,12 @@ def init(config):
         devices=1,
         log_every_n_steps=1,
         max_epochs=config["train"]["num_epochs"],
+        logger=[tb_logger, neptune_logger],
         callbacks=[
             callbacks.PlottingCallback(),
             callbacks.LoggingCallback(logger),
             checkpoint_callback,
+            # batchsize_finder,
         ],
     )
 

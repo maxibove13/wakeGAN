@@ -53,7 +53,7 @@ class LoggingCallback(callbacks.Callback):
     def on_train_epoch_end(self, trainer, pl_module):
         self.logger.info(
             f"{trainer.current_epoch + 1:03d}/{trainer.max_epochs}, "
-            f"loss disc: {trainer.logged_metrics['d_loss']:.2f} / "
+            f"loss disc: {trainer.logged_metrics['d_loss_synth']+trainer.logged_metrics['d_loss_real']:.2f} / "
             f"loss gen: {trainer.logged_metrics['g_loss']:.2f}, "
             f"rmse train: {trainer.logged_metrics['rmse_train_epoch']:.2f} / rmse dev: {trainer.logged_metrics['rmse_dev_epoch']:.2f} "
         )
@@ -64,7 +64,8 @@ class PlottingCallback(callbacks.Callback):
         super().__init__()
         self.metrics = {
             "loss_gen_adv": [],
-            "loss_disc": [],
+            "loss_disc_real": [],
+            "loss_disc_synth": [],
             "loss_gen_mse": [],
             "rmse_train": [],
             "rmse_dev": [],
@@ -79,7 +80,12 @@ class PlottingCallback(callbacks.Callback):
 
     def on_train_epoch_end(self, trainer, pl_module):
         self.metrics["loss_gen_adv"].append(trainer.logged_metrics["g_loss_adv"].item())
-        self.metrics["loss_disc"].append(trainer.logged_metrics["d_loss"].item())
+        self.metrics["loss_disc_real"].append(
+            trainer.logged_metrics["d_loss_real"].item()
+        )
+        self.metrics["loss_disc_synth"].append(
+            trainer.logged_metrics["d_loss_synth"].item()
+        )
         self.metrics["loss_gen_mse"].append(trainer.logged_metrics["g_loss_mse"].item())
         self.metrics["rmse_train"].append(
             trainer.logged_metrics["rmse_train_epoch"].item()
@@ -99,7 +105,8 @@ class PlottingCallback(callbacks.Callback):
             {
                 "gen_adv": self.metrics["loss_gen_adv"],
                 "gen_mse": self.metrics["loss_gen_mse"],
-                "disc": self.metrics["loss_disc"],
+                "disc_synth": self.metrics["loss_disc_synth"],
+                "disc_real": self.metrics["loss_disc_real"],
             },
             {
                 "train": self.metrics["rmse_train"],
@@ -127,7 +134,7 @@ class PlottingCallback(callbacks.Callback):
                 }
             )
 
-        seed = 0
+        seed = 3
         torch.manual_seed(seed)
         indices = torch.randperm(len(pl_module.images_test["real"]))
         self.plotters = {

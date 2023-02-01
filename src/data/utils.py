@@ -11,7 +11,6 @@ __date__ = "08/22"
 import os
 import cv2
 
-import albumentations as A
 from PIL import Image
 import numpy as np
 from torch.utils.data import Dataset

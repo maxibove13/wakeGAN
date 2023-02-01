@@ -160,7 +160,10 @@ class WakeGAN(pl.LightningModule):
 
         d_loss = loss_real + loss_synth
 
-        self.log("d_loss", d_loss, on_step=False, on_epoch=True, prog_bar=False)
+        self.log("d_loss_real", loss_real, on_step=False, on_epoch=True, prog_bar=False)
+        self.log(
+            "d_loss_synth", loss_synth, on_step=False, on_epoch=True, prog_bar=False
+        )
 
         return d_loss
 
@@ -169,13 +172,25 @@ class WakeGAN(pl.LightningModule):
 
         pred_synth = self.discriminator(self.synths, inflows)
 
-        loss_adv = self.loss["bce"](pred_synth, torch.ones_like(pred_synth))
+        loss_adv = 1e-3 * self.loss["bce"](pred_synth, torch.ones_like(pred_synth))
         loss_mse = self.loss["mse"](images, self.synths)
 
         g_loss = (1 - self.f_mse) * loss_adv + self.f_mse * loss_mse
 
-        self.log("g_loss_adv", loss_adv, on_step=False, on_epoch=True, prog_bar=False)
-        self.log("g_loss_mse", loss_mse, on_step=False, on_epoch=True, prog_bar=False)
+        self.log(
+            "g_loss_adv",
+            (1 - self.f_mse) * loss_adv,
+            on_step=False,
+            on_epoch=True,
+            prog_bar=False,
+        )
+        self.log(
+            "g_loss_mse",
+            self.f_mse * loss_mse,
+            on_step=False,
+            on_epoch=True,
+            prog_bar=False,
+        )
         self.log("g_loss", g_loss, on_step=False, on_epoch=True, prog_bar=True)
 
         return g_loss
