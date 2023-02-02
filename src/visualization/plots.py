@@ -197,10 +197,10 @@ class FlowImagePlotter:
         fig_path = os.path.join("figures", "monitor" if self.monitor else "evaluation")
 
         self.fig["img"].savefig(
-            os.path.join(fig_path, "image_comparison.png"), bbox_inches="tight"
+            os.path.join(fig_path, "images.png"), bbox_inches="tight"
         )
         self.fig["err"].savefig(
-            os.path.join(fig_path, "error_evolution.png"), bbox_inches="tight"
+            os.path.join(fig_path, "pixel_diff.png"), bbox_inches="tight"
         )
 
     def _set_ax_addons_img(self, c, ax):

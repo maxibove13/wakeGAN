@@ -67,8 +67,8 @@ dvc pull
 ```
 
 Check generated files in `/figures/test`:
-- `image_comparison_test.png`: flow field comparison between real and synth images for four random samples
-- `image_comparison_err_test.png`: error for those four random samples
+- `images.png`: flow field comparison between real and synth images for four random samples
+- `pixel_diff.png`: error for those four random samples
 - `profiles.png`: wind profiles at different streamwise position in relation to the wind turbine for both the ground truth and the generated flow.
 
 
@@ -166,7 +166,7 @@ Then, let's add the data we are going to track to dvc staging area:
 dvc add data/preprocessed/tracked/
 ```
 
-With this command, dvc creates a file (`*.dvc`) that contains metadata about your tracked data, let's git add it and ignore the folder that contains the tracked data
+With this command, dvc creates a file (`*.dvc`) in the tracked folder that contains metadata about your tracked data, let's git add it and ignore the folder that contains the tracked data
 
 ```
 git add data/preprocessed/tracked.dvc data/preprocessed/.gitignore

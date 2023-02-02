@@ -50,7 +50,7 @@ def main():
     model = WakeGAN(config, dataset.norm_params)
 
     trainer.fit(model, datamodule)
-    trainer.test(model, datamodule.val_dataloader(), ckpt_path="best")
+    trainer.validate(model, datamodule.val_dataloader(), ckpt_path="best")
 
 
 def init(config):
