@@ -52,11 +52,11 @@ def main():
         datamodule=datamodule,
         ckpt_path=_get_ckpt_path(),
     )
-    # trainer.test(
-    #     model=model,
-    #     datamodule=datamodule,
-    #     ckpt_path=_get_ckpt_path(),
-    # )
+    trainer.test(
+        model=model,
+        datamodule=datamodule,
+        ckpt_path=_get_ckpt_path(),
+    )
 
 
 def _get_ckpt_path():
