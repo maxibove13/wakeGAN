@@ -27,21 +27,6 @@ def main():
     with open("config.yaml") as file:
         config = yaml.safe_load(file)
 
-    trainer, dataset, dataloader = init(config)
-
-    model = WakeGAN(config, dataset.norm_params)
-
-    trainer.test(
-        model=model,
-        dataloaders=dataloader,
-        ckpt_path=_get_ckpt_path(),
-    )
-
-
-def init(config: Dict):
-    with open(os.path.join("data", "aux", "norm_params.json")) as f:
-        norm_params = json.load(f)
-
     trainer = pl.Trainer(
         accelerator="gpu",
         devices=1,
@@ -52,27 +37,35 @@ def init(config: Dict):
         logger=False,
     )
 
-    dataset_dev = dataset.WakeGANDataset(
-        data_dir=os.path.join("data", "preprocessed", "tracked", "test"),
+    dataset_train = dataset.WakeGANDataset(
+        data_dir=os.path.join("data", "preprocessed", "tracked", "train"),
         config=config["data"],
-        dataset_type="dev",
-        norm_params=norm_params,
-        save_norm_params=False,
-    )
-    dataloader = torch.utils.data.DataLoader(
-        dataset_dev,
-        batch_size=config["train"]["batch_size"],
-        num_workers=config["train"]["num_workers"],
-        shuffle=False,
+        dataset_type="train",
+        save_norm_params=True if config["models"]["save"] else False,
     )
 
-    return trainer, dataset_dev, dataloader
+    datamodule = dataset.WakeGANDataModule(config)
+    model = WakeGAN(config, dataset_train.norm_params)
+
+    trainer.validate(
+        model=model,
+        datamodule=datamodule,
+        ckpt_path=_get_ckpt_path(),
+    )
+    # trainer.test(
+    #     model=model,
+    #     datamodule=datamodule,
+    #     ckpt_path=_get_ckpt_path(),
+    # )
 
 
 def _get_ckpt_path():
     ckpt_path = os.path.join("logs", "lightning_logs")
     versions = os.listdir(ckpt_path)
     versions.sort()
+    versions_number = [int(v.split("_")[-1]) for v in versions]
+    versions_number.sort()
+    versions = [f"version_{v}" for v in versions_number]
     ckpt_name = os.listdir(os.path.join(ckpt_path, versions[-1], "checkpoints"))[0]
     ckpt_path = os.path.join(ckpt_path, versions[-1], "checkpoints", ckpt_name)
     return ckpt_path

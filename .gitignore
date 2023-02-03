@@ -3,10 +3,13 @@ data/preprocessed/ux
 data/preprocessed/uy
 data/aux/**
 
+data/generated
+
 models/*
 
 figures/monitor/*
-figures/evaluation/*
+figures/validation/*
+figures/test/*
 figures/wf_slices
 
 logs

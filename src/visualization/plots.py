@@ -14,74 +14,144 @@ import torch
 
 from mpl_toolkits.axes_grid1 import ImageGrid
 from matplotlib.ticker import MaxNLocator
+import yaml
+
+plt.rcParams.update(
+    {
+        "text.usetex": True,
+        "font.family": "sans-serif",
+        "font.sans-serif": "Helvetica",
+    }
+)
+
+plt.rcParams["axes.linewidth"] = 0.3
+
+with open("config.yaml") as file:
+    config = yaml.safe_load(file)
 
 
 class MetricsPlotter:
     def __init__(self, epochs: int, clim: tuple):
         self.epochs = epochs
-        self.fig, self.axs = plt.subplots(3, 1, dpi=300)
+        self.fig_losses, self.axs_losses = plt.subplots(2, 1, dpi=300)
+        self.fig_metrics, self.axs_metrics = plt.subplots(2, 1, dpi=300)
 
-        for ax in [self.axs[0], self.axs[1]]:
+        self.axs_losses[0].set(ylabel="loss")
+        self.axs_losses[1].set(ylabel="loss")
+        self.axs_losses[0].xaxis.set_ticklabels([])
+
+        for ax in [self.axs_losses[0], self.axs_losses[1]]:
             ax.set(ylabel="loss")
             ax.xaxis.set_ticklabels([])
 
-        self.axs[2].set(xlabel="epochs")
-        self.axs[2].set(ylabel="RMSE [ms$^{-1}$]")
-        sec_ax1 = self.axs[2].secondary_yaxis(
+        self.axs_losses[1].set(xlabel="epochs")
+        self.axs_metrics[1].set(xlabel="epochs")
+
+        self.axs_metrics[0].set(ylabel="RMSE [ms$^{-1}$]")
+        self.axs_metrics[1].set(ylabel="FID")
+
+        sec_ax1 = self.axs_metrics[0].secondary_yaxis(
             "right",
             functions=(
                 lambda x: x / clim[0][1] * 100,
                 lambda x: x * clim[0][1] * 100,
             ),
         )
-        sec_ax1.set_ylabel("RMSE [% of range]", rotation=270, labelpad=14)
+        sec_ax1.set_ylabel("[\% of range]", rotation=270, labelpad=14)
 
-        for i, ax in enumerate(self.axs):
+        for ax in [
+            self.axs_losses[0],
+            self.axs_losses[1],
+            self.axs_metrics[0],
+            self.axs_metrics[1],
+        ]:
             ax.set_xlim(1, self.epochs - 1)
             ax.xaxis.set_major_locator(MaxNLocator(integer=True))
             ax.grid(visible=True)
-        self.axs[1].set_ylim(0, 0.005)
-        self.axs[2].set_ylim(0, 0.8)
 
-    def plot(self, loss: Dict, rmse: Dict, epoch: int):
-        """Plot losses and RMSE for train and dev sets"""
+        self.axs_losses[0].set_ylim(0.5, 1)
+        self.axs_losses[1].set_ylim(0, 0.006)
+
+        self.axs_metrics[0].set_ylim(0, 1)
+        # self.axs_metrics[1].set_ylim(0, 5)
+
+    def plot(self, loss: Dict, metrics: Dict, epoch: int):
         x = np.arange(0, epoch + 1)
+        self._plot_metrics(x, metrics, epoch)
+        self._plot_losses(x, loss, epoch)
 
-        self.axs[0].plot(
+    def _plot_losses(self, x: Dict, loss: Dict, epoch: int) -> None:
+        self.axs_losses[0].plot(
             x, loss["disc_synth"], label="Discriminator synth loss", color="C1"
         )
-        self.axs[0].plot(
+        self.axs_losses[0].plot(
             x, loss["disc_real"], label="Discriminator real loss", color="C0"
         )
-
-        self.axs[1].plot(
+        self.axs_losses[1].plot(
             x, loss["gen_adv"], label="Generator adversarial loss", color="r"
         )
-        self.axs[1].plot(x, loss["gen_mse"], label="Generator MSE loss", color="C1")
-
-        self.axs[2].plot(
-            x, rmse["train"], label="RMSE Ux (Training)", color="g", ls="-"
+        self.axs_losses[1].plot(
+            x, loss["gen_mse"], label="Generator MSE loss", color="C1"
         )
-        self.axs[2].plot(x, rmse["dev"], label="RMSE Ux (Testing)", color="g", ls="--")
 
         if epoch == 0:
-            for i, ax in enumerate(self.axs):
+            for i, ax in enumerate(self.axs_losses):
                 ax.legend(
                     loc="upper right" if i == 1 else "upper right", fontsize="x-small"
                 )
 
-        self.fig.savefig(os.path.join("figures", "monitor", "metrics.png"))
+        self.fig_losses.savefig(os.path.join("figures", "monitor", "losses.png"))
+
+    def _plot_metrics(self, x: Dict, metrics: Dict, epoch: int) -> None:
+        """Plot RMSE and FID for train and val sets"""
+
+        self.axs_metrics[0].plot(
+            x, metrics["rmse"]["train"], label="RMSE Ux (Training)", color="g", ls="-"
+        )
+        self.axs_metrics[0].plot(
+            x, metrics["rmse"]["val"], label="RMSE Ux (Validation)", color="g", ls="--"
+        )
+        self.axs_metrics[1].plot(
+            x, metrics["fid"]["train"], label="FID Ux (Training)", color="b", ls="-"
+        )
+        self.axs_metrics[1].plot(
+            x, metrics["fid"]["val"], label="FID Ux (Validation)", color="b", ls="--"
+        )
+
+        if epoch == 0:
+            for i, ax in enumerate(self.axs_metrics):
+                ax.legend(
+                    loc="upper right" if i == 1 else "upper right", fontsize="x-small"
+                )
+
+        self.fig_metrics.savefig(os.path.join("figures", "monitor", "metrics.png"))
 
 
 class FlowImagePlotter:
     def __init__(
-        self, channels: int, clim: tuple, monitor: bool = True, rmse: float = None
+        self,
+        channels: int,
+        clim: tuple,
+        monitor: bool = True,
+        rmse: float = None,
+        dataset: str = None,
     ):
 
         self.monitor = monitor
         self.channels = channels
         self.clim = clim
+        self.dataset = dataset
         self.fig = {"img": plt.figure(dpi=300), "err": plt.figure(dpi=300)}
+
+        self.x_lims = np.linspace(
+            -config["data"]["wt_diam"] * config["data"]["lim_around_wt"][0],
+            +config["data"]["wt_diam"] * config["data"]["lim_around_wt"][1],
+        )
+        self.y_lims = np.linspace(
+            -config["data"]["wt_diam"] * config["data"]["lim_around_wt"][2],
+            config["data"]["wt_diam"] * config["data"]["lim_around_wt"][3],
+            num=config["data"]["original_size"][0],
+        )
 
         self.grid_template = {
             "img": ImageGrid(
@@ -93,7 +163,7 @@ class FlowImagePlotter:
                 label_mode="L" if monitor else "all",
                 cbar_location="right",
                 cbar_mode="edge",
-                cbar_pad=None if monitor else 0.15,
+                cbar_pad=None if monitor else 0.18,
             ),
             "err": ImageGrid(
                 self.fig["err"],
@@ -107,22 +177,23 @@ class FlowImagePlotter:
         }
 
         for c, ax in enumerate(self.grid_template["img"]):
-            ax.get_xaxis().set_visible(False)
-            ax.get_yaxis().set_visible(False)
+            # ax.get_xaxis().set_visible(True)
+            # ax.get_yaxis().set_visible(True)
+
             self._set_ax_addons_img(c, ax)
 
         for c, ax in enumerate(self.grid_template["err"]):
             self._set_ax_addons_err(c, ax)
 
         if not self.monitor:
-            self.fig["img"].suptitle(
-                f"Flow field comparison\n"
-                f"Average RMSE for testing dataset: ({rmse:.3f})",
-                y=0.9,
-            )
+            # self.fig["img"].suptitle(
+            #     # f"Flow field comparison\n"
+            #     f"Average RMSE for {self.dataset} dataset: ({rmse:.3f})",
+            #     y=0.6,
+            # )
             self.fig["err"].suptitle(
-                f"Flow field error comparison\n"
-                f"Average RMSE for testing dataset: ({rmse:.3f})",
+                # f"Flow field error comparison\n"
+                f"Average RMSE for {self.dataset} dataset: ({rmse:.3f})",
                 y=0.75,
             )
 
@@ -150,13 +221,23 @@ class FlowImagePlotter:
                 ],
             }
 
+        lims = [
+            -config["data"]["lim_around_wt"][0],
+            +config["data"]["lim_around_wt"][1],
+            -config["data"]["lim_around_wt"][2],
+            +config["data"]["lim_around_wt"][3],
+        ]
         for c, (ax, im) in enumerate(zip(self.grid_template["img"], grid["img"])):
+            if c == 0:
+                print(im[:, 0])
             im = ax.imshow(
                 im,
                 cmap=cm.coolwarm,
                 interpolation="none",
                 vmin=self.clim[0][0],
                 vmax=self.clim[0][1],
+                extent=lims,
+                origin="lower",
             )
             if c == 2:
                 cb = self.grid_template["img"].cbar_axes[0].colorbar(im)
@@ -194,7 +275,10 @@ class FlowImagePlotter:
             cbar.ax.tick_params(labelsize=10)
             cbar.set_label("[ms$^{-1}$]", rotation=270, labelpad=10)
 
-        fig_path = os.path.join("figures", "monitor" if self.monitor else "evaluation")
+        if not self.dataset:
+            fig_path = os.path.join("figures", "monitor")
+        else:
+            fig_path = os.path.join("figures", self.dataset)
 
         self.fig["img"].savefig(
             os.path.join(fig_path, "images.png"), bbox_inches="tight"
@@ -205,9 +289,41 @@ class FlowImagePlotter:
 
     def _set_ax_addons_img(self, c, ax):
 
+        secax = ax.secondary_yaxis("left")
+        ax.tick_params(
+            axis="both",
+            which="major",
+            labelsize=6,
+            length=2,
+            width=0.4,
+            direction="in",
+        )
+        ax.tick_params(
+            axis="both",
+            which="minor",
+            labelsize=6,
+            length=2,
+            width=0.4,
+            direction="in",
+        )
+        secax.tick_params(
+            axis="both",
+            which="major",
+            labelsize=6,
+            length=2,
+            width=0.4,
+            direction="in",
+        )
+        secax.set_yticks(np.arange(-1, 2), labels=[])
+        ax.set_yticks(np.arange(-1, 2))
+        ax.set_xticks(np.arange(-1, 4))
+        ax.yaxis.tick_right()
+
+        secax.set_yticks(np.arange(-1, 2))
+
         if c == 0:
             ax.get_yaxis().set_visible(True)
-            ax.set_yticks([])
+            # ax.set_yticks([])
         elif c == 1:
             ax.set_title("U$_{synth}$")
 
@@ -219,27 +335,27 @@ class FlowImagePlotter:
                 ax.set_title("U$_{synth}$ - U$_{real}$")
             elif c == 3:
                 ax.get_yaxis().set_visible(True)
-                ax.set_ylabel("dev sample")
+                ax.set_ylabel("val sample")
                 ax.set_yticks([])
         else:
             if c == 0:
-                ax.set_title("U$^{real}$")
-                ax.set_ylabel(f"$Ux$ (Case #{c//2 + 1})", fontsize=10)
+                ax.set_title("U$^{real}, x/D$", fontsize=8)
+                ax.set_ylabel(f"$Ux, x/D$ (\#{c//2 + 1})", fontsize=6, labelpad=2)
             elif c == 1:
-                ax.set_ylabel(f"$Ux$ (Case #{c//2 + 1})", fontsize=10)
-                ax.set_title("U$^{synth}$")
+                ax.set_ylabel(f"$Ux, x/D$ (\#{c//2 + 1})", fontsize=6, labelpad=2)
+                ax.set_title("U$^{synth}, x/D$", fontsize=8)
             elif c == 2:
-                ax.set_title("U$^{real}$")
+                ax.set_title("U$^{real}, x/D$", fontsize=8)
                 ax.get_yaxis().set_visible(True)
-                ax.set_ylabel(f"$Ux$ (Case #{c//2 + 1})", fontsize=10)
+                ax.set_ylabel(f"$Ux, x/D$ (\#{c//2 + 1})", fontsize=6, labelpad=2)
                 ax.set_yticks([])
             elif c in [4, 6]:
                 ax.get_yaxis().set_visible(True)
-                ax.set_ylabel(f"$Ux$ (Case #{c//2 + 1})", fontsize=10)
+                ax.set_ylabel(f"$Ux, x/D$ (\#{c//2 + 1})", fontsize=6, labelpad=2)
                 ax.set_yticks([])
                 ax.set_aspect("equal")
             elif c == 3:
-                ax.set_title("U$^{synth}$")
+                ax.set_title("U$^{synth}, x/D$", fontsize=8)
             elif c == 7:
                 pass
 
@@ -257,11 +373,13 @@ class FlowImagePlotter:
         else:
             if c == 0:
                 ax.set_ylabel("$U_x^{fake} - U_x^{real}$", fontsize=10)
-            ax.set_title(f"Case #{c+1}")
+            ax.set_title(f"\#{c+1}")
 
 
 class ProfilesPlotter:
-    def __init__(self, wt_d: float, limits: tuple, size: tuple, metadata: dict):
+    def __init__(
+        self, wt_d: float, limits: tuple, size: tuple, metadata: dict, dataset: str
+    ):
         self.fig = plt.figure(figsize=(10, 25), dpi=300)
         self.wt_d = wt_d
         self.grid = ImageGrid(
@@ -273,6 +391,7 @@ class ProfilesPlotter:
             aspect=False,
             cbar_mode=None,
         )
+        self.dataset = dataset
 
         x_left = -self.wt_d * limits[0]
         x_right = self.wt_d * limits[1]
@@ -281,6 +400,8 @@ class ProfilesPlotter:
 
         self.x = np.linspace(x_left, x_right, num=size[0])
         self.y = np.linspace(y_bottom, y_top, num=size[0])
+
+        print(self.y)
 
         self.prec = [m["prec"] for m in metadata]
         self.angle = [m["angle"] for m in metadata]
@@ -298,7 +419,8 @@ class ProfilesPlotter:
 
                 real_prof = im_real[:, x_index].cpu()
                 synth_prof = im_synth[:, x_index].cpu()
-
+                if j == 0 and i == 0:
+                    print(real_prof)
                 (real_curve,) = ax.plot(
                     real_prof, self.y / self.wt_d, c="k", ls="-", label="CFD"
                 )
@@ -314,7 +436,7 @@ class ProfilesPlotter:
                 if j == 0:
                     m_s = "ms$^{-1}$"
                     ax.set_ylabel(
-                        f"$y/D$ -#{i+1}, prec.: {self.prec[i]} {m_s}, {self.angle[i]}°, {self.pos[i]}",
+                        f"$y/D$ -\#{i+1}, prec.: {self.prec[i]} {m_s}, {self.angle[i]}°, {self.pos[i]}",
                         fontsize=14,
                     )
 
@@ -325,7 +447,7 @@ class ProfilesPlotter:
             fontsize="xx-large",
         )
         self.fig.savefig(
-            os.path.join("figures", "evaluation", "profiles.png"),
+            os.path.join("figures", self.dataset, "profiles.png"),
             dpi=300,
             bbox_inches="tight",
         )
@@ -370,11 +492,7 @@ def plot_histogram(dataset):
         if c == 0:
             axs[c].set_ylabel("Probability density")
 
-        figname = (
-            "hist_pixel_values_train_set.png"
-            if dataset.type == "train"
-            else "hist_pixel_values_dev_set.png"
-        )
+        figname = f"hist_pixel_values_{dataset.type}.png"
 
     norm_type = (
         f"to {dataset.range} range"

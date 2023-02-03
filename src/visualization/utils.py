@@ -193,7 +193,7 @@ def plot_flow_field_comparison(fig_im, grid, image, im_gen, image_test, im_gen_t
             cb.set_label("[ms$^{-1}$]", rotation=270, labelpad=10)
         elif c == 3:
             ax.get_yaxis().set_visible(True)
-            ax.set_ylabel("dev sample")
+            ax.set_ylabel("val sample")
             ax.set_yticks([])
         elif c == 5:
             cb = grid.cbar_axes[1].colorbar(im)

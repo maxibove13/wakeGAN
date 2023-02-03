@@ -8,7 +8,6 @@ ipykernel
 jupyter
 lightning[extra]
 matplotlib
-neptune-client
 pytorch-lightning
 pyyaml
 scikit-learn
@@ -19,4 +18,5 @@ torch
 torchmetrics
 torchsummary
 torchvision
+torch-fidelity
 ypstruct

@@ -30,11 +30,11 @@ logging.basicConfig(
 )
 logger = logging.getLogger("train")
 
-neptune_logger = NeptuneLogger(
-    project="idatha/wakegan",
-    api_key="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiIyNWQ5YjJjZi05OTE1LTRhNWEtODdlZC00MWRlMzMzNGMwMzYifQ==",
-    log_model_checkpoints=False,
-)
+# neptune_logger = NeptuneLogger(
+#     project="idatha/wakegan",
+#     api_key="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiIyNWQ5YjJjZi05OTE1LTRhNWEtODdlZC00MWRlMzMzNGMwMzYifQ==",
+#     log_model_checkpoints=False,
+# )
 tb_logger = TensorBoardLogger(save_dir="logs/")
 
 
@@ -51,21 +51,20 @@ def main():
 
     trainer.fit(model, datamodule)
     trainer.validate(model, datamodule.val_dataloader(), ckpt_path="best")
+    # trainer.test(model, datamodule.test_dataloader(), ckpt_path="best")
 
 
 def init(config):
 
-    neptune_logger.log_hyperparams(params=config)
+    # neptune_logger.log_hyperparams(params=config)
 
     checkpoint_callback = ModelCheckpoint(
         dirpath=None,
         save_top_k=1,
-        monitor="rmse_dev_epoch",
+        monitor="rmse_val_epoch",
         mode="min",
-        filename="wakegan-{epoch}-{rmse_dev_epoch:.2f}",
+        filename="wakegan-{epoch}-{rmse_val_epoch:.2f}",
     )
-
-    batchsize_finder = BatchSizeFinder()
 
     dataset_train = dataset.WakeGANDataset(
         data_dir=os.path.join("data", "preprocessed", "tracked", "train"),
@@ -82,10 +81,10 @@ def init(config):
         devices=1,
         log_every_n_steps=1,
         max_epochs=config["train"]["num_epochs"],
-        logger=[tb_logger, neptune_logger],
+        logger=[tb_logger],
         callbacks=[
-            callbacks.PlottingCallback(),
             callbacks.LoggingCallback(logger),
+            callbacks.PlottingCallback(),
             checkpoint_callback,
             # batchsize_finder,
         ],

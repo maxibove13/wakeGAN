@@ -18,12 +18,77 @@ import torch
 from src.visualization import plots
 
 
+class WakeGANDataModule(pl.LightningDataModule):
+    def __init__(self, config):
+        super().__init__()
+        self.data_config: Dict = config["data"]
+        self.data_dir: Dict = {
+            "train": os.path.join("data", "preprocessed", "tracked", "train"),
+            "val": os.path.join("data", "preprocessed", "tracked", "val"),
+            "test": os.path.join("data", "preprocessed", "tracked", "test"),
+        }
+        self.save: bool = config["models"]["save"]
+        self.batch_size = config["train"]["batch_size"]
+        self.num_workers = config["train"]["num_workers"]
+        self.original_size = config["data"]["original_size"]
+
+    def setup(self, stage: str):
+        self.dataset_train = WakeGANDataset(
+            self.data_dir["train"],
+            self.data_config,
+            "train",
+            save_norm_params=True if self.save else False,
+        )
+        self.dataset_val = WakeGANDataset(
+            self.data_dir["val"],
+            self.data_config,
+            "val",
+            norm_params=self.dataset_train.norm_params,
+            save_norm_params=True if self.save else False,
+        )
+        self.dataset_test = WakeGANDataset(
+            self.data_dir["test"],
+            self.data_config,
+            "test",
+            norm_params=self.dataset_train.norm_params,
+            save_norm_params=True if self.save else False,
+        )
+
+        plots.plot_histogram(self.dataset_train)
+        plots.plot_histogram(self.dataset_val)
+        plots.plot_histogram(self.dataset_test)
+
+    def train_dataloader(self):
+        return torch.utils.data.DataLoader(
+            self.dataset_train,
+            batch_size=self.batch_size,
+            num_workers=self.num_workers,
+            shuffle=True,
+        )
+
+    def val_dataloader(self):
+        return torch.utils.data.DataLoader(
+            self.dataset_val,
+            batch_size=self.batch_size,
+            num_workers=self.num_workers,
+            shuffle=False,
+        )
+
+    def test_dataloader(self):
+        return torch.utils.data.DataLoader(
+            self.dataset_test,
+            batch_size=len(self.dataset_test),
+            num_workers=self.num_workers,
+            shuffle=False,
+        )
+
+
 class WakeGANDataset:
     def __init__(
         self,
         data_dir: str,
         config: Dict,
-        dataset_type: "str",
+        dataset_type: str,
         norm_params: Dict = None,
         save_norm_params: bool = False,
     ):
@@ -207,52 +272,5 @@ class WakeGANDataset:
     ) -> Tensor:
         image = WakeGANDataset.unnormalize_image(norm_type, norm_params, image)
         image = WakeGANDataset.rescale_back_to_velocity(image, clim)
+        image = transforms.Resize((44, 44))(image)
         return image
-
-
-class WakeGANDataModule(pl.LightningDataModule):
-    def __init__(self, config):
-        super().__init__()
-        self.data_config: Dict = config["data"]
-        self.data_dir: Dict = {
-            "train": os.path.join("data", "preprocessed", "tracked", "train"),
-            "dev": os.path.join("data", "preprocessed", "tracked", "test"),
-        }
-        self.save: bool = config["models"]["save"]
-        self.batch_size = config["train"]["batch_size"]
-        self.num_workers = config["train"]["num_workers"]
-
-    def setup(self, stage: str):
-        self.dataset_train = WakeGANDataset(
-            self.data_dir["train"],
-            self.data_config,
-            "train",
-            save_norm_params=True if self.save else False,
-        )
-        self.norm_params = self.dataset_train.norm_params
-        self.dataset_dev = WakeGANDataset(
-            self.data_dir["dev"],
-            self.data_config,
-            "dev",
-            norm_params=self.norm_params,
-            save_norm_params=True if self.save else False,
-        )
-
-        plots.plot_histogram(self.dataset_train)
-        plots.plot_histogram(self.dataset_dev)
-
-    def train_dataloader(self):
-        return torch.utils.data.DataLoader(
-            self.dataset_train,
-            batch_size=self.batch_size,
-            num_workers=self.num_workers,
-            shuffle=True,
-        )
-
-    def val_dataloader(self):
-        return torch.utils.data.DataLoader(
-            self.dataset_dev,
-            batch_size=self.batch_size,
-            num_workers=self.num_workers,
-            shuffle=False,
-        )

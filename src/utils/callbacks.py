@@ -5,14 +5,17 @@ __email__ = "maxibove13@gmail.com"
 __status__ = "Development"
 __date__ = "01/23"
 
+import json
 import os
-import logging
 
-import torch
+from matplotlib import pyplot as plt
 from pytorch_lightning import callbacks
+from torchvision import utils
+import torch
 
 from src.visualization import plots
-from src.data import dataset
+
+seed = 2
 
 
 class LoggingCallback(callbacks.Callback):
@@ -44,7 +47,7 @@ class LoggingCallback(callbacks.Callback):
 
         self.logger.info(
             f"Training set samples: {len(trainer.datamodule.dataset_train)}\n"
-            f"Testing set samples: {len(trainer.datamodule.dataset_dev)}\n"
+            f"Validation set samples: {len(trainer.datamodule.dataset_val)}\n"
             f"Number of epochs: {trainer.max_epochs}\n"
             f"Mini batch size: {pl_module.minibatch_size}\n"
             f"Number of training batches: {len(trainer.train_dataloader)}\n"
@@ -55,7 +58,7 @@ class LoggingCallback(callbacks.Callback):
             f"{trainer.current_epoch + 1:03d}/{trainer.max_epochs}, "
             f"loss disc: {trainer.logged_metrics['d_loss_synth']+trainer.logged_metrics['d_loss_real']:.2f} / "
             f"loss gen: {trainer.logged_metrics['g_loss']:.2f}, "
-            f"rmse train: {trainer.logged_metrics['rmse_train_epoch']:.2f} / rmse dev: {trainer.logged_metrics['rmse_dev_epoch']:.2f} "
+            f"rmse train: {trainer.logged_metrics['rmse_train_epoch']:.2f} / rmse val: {trainer.logged_metrics['rmse_val_epoch']:.2f} "
         )
 
 
@@ -68,7 +71,9 @@ class PlottingCallback(callbacks.Callback):
             "loss_disc_synth": [],
             "loss_gen_mse": [],
             "rmse_train": [],
-            "rmse_dev": [],
+            "rmse_val": [],
+            "fid_train": [],
+            "fid_val": [],
         }
         self.priority = 100
 
@@ -90,15 +95,18 @@ class PlottingCallback(callbacks.Callback):
         self.metrics["rmse_train"].append(
             trainer.logged_metrics["rmse_train_epoch"].item()
         )
-
-        self.metrics["rmse_dev"].append(trainer.logged_metrics["rmse_dev_epoch"].item())
+        self.metrics["rmse_val"].append(trainer.logged_metrics["rmse_val_epoch"].item())
+        self.metrics["fid_train"].append(
+            trainer.logged_metrics["fid_train_epoch"].item()
+        )
+        self.metrics["fid_val"].append(trainer.logged_metrics["fid_val_epoch"].item())
 
         self.plotters["flow"].plot(
             [
-                pl_module.images["real"][0].detach().cpu(),
-                pl_module.images["synth"][0].detach().cpu(),
-                pl_module.images_dev["real"][0].detach().cpu(),
-                pl_module.images_dev["synth"][0].detach().cpu(),
+                pl_module.images_train["real"][0].detach().cpu(),
+                pl_module.images_train["synth"][0].detach().cpu(),
+                pl_module.images_val["real"][1].detach().cpu(),
+                pl_module.images_val["synth"][1].detach().cpu(),
             ]
         )
         self.plotters["metrics"].plot(
@@ -109,11 +117,102 @@ class PlottingCallback(callbacks.Callback):
                 "disc_real": self.metrics["loss_disc_real"],
             },
             {
-                "train": self.metrics["rmse_train"],
-                "dev": self.metrics["rmse_dev"],
+                "rmse": {
+                    "train": self.metrics["rmse_train"],
+                    "val": self.metrics["rmse_val"],
+                },
+                "fid": {
+                    "train": self.metrics["fid_train"],
+                    "val": self.metrics["fid_val"],
+                },
             },
             trainer.current_epoch,
         )
+
+        plt.close()
+
+    def on_validation_batch_end(
+        self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
+    ):
+        if trainer.state.fn != "fit":
+            path = os.path.join("data", "generated", "validation")
+            for real, synth, prec, angle, pos_x, pos_y in zip(
+                outputs["reals"],
+                outputs["synths"],
+                outputs["metadatas"]["prec"],
+                outputs["metadatas"]["angle"],
+                outputs["metadatas"]["pos"][0],
+                outputs["metadatas"]["pos"][1],
+            ):
+                filename = f"{prec.item()}_{angle}_({pos_x.item()},{pos_y.item()}).pt"
+                # utils.save_image(
+                #     real, f"{os.path.join(path, 'real', filename)}", normalize=True
+                # )
+                # utils.save_image(
+                #     synth, f"{os.path.join(path, 'synth', filename)}", normalize=True
+                # )
+                torch.save(real, f"{os.path.join(path, 'real', filename)}")
+                torch.save(synth, f"{os.path.join(path, 'synth', filename)}")
+
+    def on_validation_epoch_end(self, trainer, pl_module):
+        if trainer.state.fn != "fit":
+            mtdts = []
+            for c, (prec, angle, pos_x, pos_y, im, synth) in enumerate(
+                zip(
+                    pl_module.metadatas_val["prec"],
+                    pl_module.metadatas_val["angle"],
+                    pl_module.metadatas_val["pos"][0],
+                    pl_module.metadatas_val["pos"][1],
+                    pl_module.images_val["real"],
+                    pl_module.images_val["synth"],
+                )
+            ):
+
+                mtdts.append(
+                    {
+                        "prec": prec.item(),
+                        "angle": angle,
+                        "pos": (pos_x.item(), pos_y.item()),
+                    }
+                )
+
+            torch.manual_seed(seed)
+            indices = torch.randperm(len(pl_module.images_val["real"]))
+            self.plotters_val = {
+                "flow": plots.FlowImagePlotter(
+                    pl_module.channels,
+                    pl_module.clim,
+                    monitor=False,
+                    rmse=trainer.logged_metrics["rmse_val_epoch"].item(),
+                    dataset="validation",
+                ),
+                "profiles": plots.ProfilesPlotter(
+                    wt_d=pl_module.wt_d,
+                    limits=pl_module.limits,
+                    size=pl_module.original_size,
+                    metadata=[mtdts[i] for i in indices[:4]],
+                    dataset="validation",
+                ),
+            }
+
+            images_to_plot = []
+            for i in indices[:4]:
+                images_to_plot.append(pl_module.images_val["real"][i].detach().cpu())
+                images_to_plot.append(pl_module.images_val["synth"][i].detach().cpu())
+
+            self.plotters_val["flow"].plot(images_to_plot)
+            self.plotters_val["profiles"].plot(images_to_plot)
+
+            with open(os.path.join("figures", "validation", "metrics.json"), "w") as f:
+                json.dump(
+                    {
+                        "fid": trainer.logged_metrics["fid_val_epoch"].item(),
+                        "rmse": trainer.logged_metrics["rmse_val_epoch"].item(),
+                    },
+                    f,
+                )
+
+            plt.close()
 
     def on_test_epoch_end(self, trainer, pl_module):
 
@@ -134,7 +233,6 @@ class PlottingCallback(callbacks.Callback):
                 }
             )
 
-        seed = 3
         torch.manual_seed(seed)
         indices = torch.randperm(len(pl_module.images_test["real"]))
         self.plotters = {
@@ -142,13 +240,15 @@ class PlottingCallback(callbacks.Callback):
                 pl_module.channels,
                 pl_module.clim,
                 monitor=False,
-                rmse=trainer.logged_metrics["rmse_test_step"].item(),
+                rmse=trainer.logged_metrics["rmse_test_epoch"].item(),
+                dataset="testing",
             ),
             "profiles": plots.ProfilesPlotter(
                 wt_d=pl_module.wt_d,
                 limits=pl_module.limits,
-                size=pl_module.size,
+                size=pl_module.original_size,
                 metadata=[mtdts[i] for i in indices[:4]],
+                dataset="testing",
             ),
         }
 
@@ -159,3 +259,14 @@ class PlottingCallback(callbacks.Callback):
 
         self.plotters["flow"].plot(images_to_plot)
         self.plotters["profiles"].plot(images_to_plot)
+
+        with open(os.path.join("figures", "testing", "metrics.json"), "w") as f:
+            json.dump(
+                {
+                    "fid": trainer.logged_metrics["fid_test_epoch"].item(),
+                    "rmse": trainer.logged_metrics["rmse_test_epoch"].item(),
+                },
+                f,
+            )
+
+        plt.close()
