@@ -11,7 +11,7 @@ import os
 import pytorch_lightning as pl
 import torch
 import torchmetrics
-from torchvision import utils
+from torchvision import transforms
 
 from src.data.dataset import WakeGANDataset
 from src.models import dcgan
@@ -40,13 +40,13 @@ class WakeGAN(pl.LightningModule):
         self.mse_test = torchmetrics.MeanSquaredError(squared=False)
 
         self.fid_train = torchmetrics.image.fid.FrechetInceptionDistance(
-            feature=64, normalize=True
+            feature=64, normalize=False
         )
         self.fid_val = torchmetrics.image.fid.FrechetInceptionDistance(
-            feature=64, normalize=True
+            feature=64, normalize=False
         )
         self.fid_test = torchmetrics.image.fid.FrechetInceptionDistance(
-            feature=64, normalize=True
+            feature=64, normalize=False
         )
 
     def forward(self, z):
@@ -54,25 +54,34 @@ class WakeGAN(pl.LightningModule):
 
     def training_step(self, batch, batch_idx, optimizer_idx):
 
-        self.reals, inflows, _ = batch
+        reals, inflows, _ = batch
 
-        self.synths = self(inflows)
+        synths = self(inflows)
+
+        self.fid_train.update(
+            transforms.ConvertImageDtype(dtype=torch.uint8)(reals).repeat(1, 3, 1, 1),
+            real=True,
+        )
+        self.fid_train.update(
+            transforms.ConvertImageDtype(dtype=torch.uint8)(synths).repeat(1, 3, 1, 1),
+            real=False,
+        )
 
         if optimizer_idx == 0:
-            loss = self._train_discriminator(inflows, self.reals)
+            loss = self._train_discriminator(inflows, synths, reals)
 
         if optimizer_idx == 1:
-            loss = self._train_generator(self.reals, inflows)
+            loss = self._train_generator(inflows, synths, reals)
 
         self.images_train = {
             "real": WakeGANDataset.transform_back(
-                self.reals.clone().squeeze(),
+                reals.clone().squeeze(),
                 self.norm["type"],
                 self.norm["params"],
                 self.clim,
             ),
             "synth": WakeGANDataset.transform_back(
-                self.synths.clone().squeeze(),
+                synths.clone().squeeze(),
                 self.norm["type"],
                 self.norm["params"],
                 self.clim,
@@ -84,33 +93,36 @@ class WakeGAN(pl.LightningModule):
             self.images_train["synth"],
         )
 
-        self.fid_train.update(
-            self.images_train["real"].unsqueeze(dim=1).repeat(1, 3, 1, 1), real=True
-        )
-        self.fid_train.update(
-            self.images_train["synth"].unsqueeze(dim=1).repeat(1, 3, 1, 1), real=False
-        )
-
         self.log(
             "rmse_train_epoch",
             self.mse_train,
             on_step=False,
             on_epoch=True,
-            prog_bar=False,
+            prog_bar=True,
         )
         self.log(
             "fid_train_epoch",
             self.fid_train.compute(),
             on_step=False,
             on_epoch=True,
-            prog_bar=False,
+            prog_bar=True,
         )
 
-        return {"loss": loss}
+        return {"loss": loss, "reals": reals, "synths": synths}
 
     def validation_step(self, batch, batch_idx):
         reals, inflows, metadatas = batch
         synths = self(inflows)
+
+        # update FID, image expected to be [N, 3, H, W], dtype=uint8 if normalize=False
+        self.fid_val.update(
+            transforms.ConvertImageDtype(dtype=torch.uint8)(reals).repeat(1, 3, 1, 1),
+            real=True,
+        )
+        self.fid_val.update(
+            transforms.ConvertImageDtype(dtype=torch.uint8)(synths).repeat(1, 3, 1, 1),
+            real=False,
+        )
 
         self.images_val = {
             "real": WakeGANDataset.transform_back(
@@ -128,12 +140,20 @@ class WakeGAN(pl.LightningModule):
             self.images_val["synth"],
         )
 
-        # update FID, image expected to be [N, 3, H, W]
-        self.fid_val.update(
-            self.images_val["real"].unsqueeze(dim=1).repeat(1, 3, 1, 1), real=True
+        self.log(
+            "rmse_val_epoch",
+            self.mse_val,
+            on_step=False,
+            on_epoch=True,
+            prog_bar=True,
         )
-        self.fid_val.update(
-            self.images_val["synth"].unsqueeze(dim=1).repeat(1, 3, 1, 1), real=False
+
+        self.log(
+            "fid_val_epoch",
+            self.fid_val.compute(),
+            on_step=False,
+            on_epoch=True,
+            prog_bar=True,
         )
 
         return {
@@ -145,6 +165,15 @@ class WakeGAN(pl.LightningModule):
     def test_step(self, batch, batch_idx):
         reals, inflows, metadatas = batch
         synths = self(inflows)
+
+        self.fid_test.update(
+            transforms.ConvertImageDtype(dtype=torch.uint8)(reals).repeat(1, 3, 1, 1),
+            real=True,
+        )
+        self.fid_test.update(
+            transforms.ConvertImageDtype(dtype=torch.uint8)(synths).repeat(1, 3, 1, 1),
+            real=False,
+        )
 
         self.images_test = {
             "real": WakeGANDataset.transform_back(
@@ -158,24 +187,25 @@ class WakeGAN(pl.LightningModule):
 
         self.mse_test(self.images_test["real"], self.images_test["synth"])
 
-        self.fid_test.update(
-            self.images_test["real"].unsqueeze(dim=1).repeat(1, 3, 1, 1), real=True
+        self.log(
+            "rmse_test_epoch",
+            self.mse_test,
+            on_step=False,
+            on_epoch=True,
+            prog_bar=False,
         )
-        self.fid_test.update(
-            self.images_test["synth"].unsqueeze(dim=1).repeat(1, 3, 1, 1), real=False
+
+        self.log(
+            "fid_test_epoch",
+            self.fid_test.compute(),
+            on_step=False,
+            on_epoch=True,
+            prog_bar=False,
         )
 
     def predict_step(self, batch, batch_idx):
         inflows, _ = batch
         return self(inflows)
-
-    def validation_epoch_end(self, outputs):
-        self.log("rmse_val_epoch", self.mse_val, prog_bar=True)
-        self.log("fid_val_epoch", self.fid_val, prog_bar=True)
-
-    def test_epoch_end(self, outputs):
-        self.log("rmse_test_epoch", self.mse_test)
-        self.log("fid_test_epoch", self.fid_test)
 
     def configure_optimizers(self):
         opt_g = torch.optim.Adam(
@@ -194,11 +224,11 @@ class WakeGAN(pl.LightningModule):
 
         return [opt_d, opt_g], [lr_scheduler_d, lr_scheduler_g]
 
-    def _train_discriminator(self, inflows, images) -> None:
+    def _train_discriminator(self, inflows, synths, reals) -> None:
         """Train Discriminator: max log(D(x)) + log(1 - D(G(z)))"""
 
-        pred_real = self.discriminator(images, inflows)
-        pred_synth = self.discriminator(self.synths, inflows)
+        pred_real = self.discriminator(reals, inflows)
+        pred_synth = self.discriminator(synths, inflows)
 
         loss_real = self.loss["bce"](pred_real, torch.ones_like(pred_real))
         loss_synth = self.loss["bce"](pred_synth, torch.zeros_like(pred_synth))
@@ -212,13 +242,13 @@ class WakeGAN(pl.LightningModule):
 
         return d_loss
 
-    def _train_generator(self, images, inflows) -> None:
+    def _train_generator(self, inflows, synths, reals) -> None:
         """Train Generator: min log(1 - D(G(z))) <-> max log(D(G(z))"""
 
-        pred_synth = self.discriminator(self.synths, inflows)
+        pred_synth = self.discriminator(synths, inflows)
 
         loss_adv = 1e-3 * self.loss["bce"](pred_synth, torch.ones_like(pred_synth))
-        loss_mse = self.loss["mse"](images, self.synths)
+        loss_mse = self.loss["mse"](reals, synths)
 
         g_loss = (1 - self.f_mse) * loss_adv + self.f_mse * loss_mse
 
@@ -243,7 +273,6 @@ class WakeGAN(pl.LightningModule):
     def _set_hparams(self, config, norm_params):
         self.channels: int = config["data"]["channels"]
         self.size: tuple = config["data"]["size"]
-        self.original_size: tuple = config["data"]["original_size"]
         self.data_dir: Dict = {
             "train": os.path.join("data", "preprocessed", "tracked", "train"),
             "test": os.path.join("data", "preprocessed", "tracked", "test"),

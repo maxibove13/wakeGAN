@@ -148,11 +148,12 @@ class FlowImagePlotter:
         self.x_lims = np.linspace(
             -config["data"]["wt_diam"] * config["data"]["lim_around_wt"][0],
             +config["data"]["wt_diam"] * config["data"]["lim_around_wt"][1],
+            num=config["data"]["size"][0],
         )
         self.y_lims = np.linspace(
             -config["data"]["wt_diam"] * config["data"]["lim_around_wt"][2],
             config["data"]["wt_diam"] * config["data"]["lim_around_wt"][3],
-            num=config["data"]["original_size"][0],
+            num=config["data"]["size"][1],
         )
 
         self.grid_template = {

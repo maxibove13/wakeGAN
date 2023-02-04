@@ -30,7 +30,6 @@ class WakeGANDataModule(pl.LightningDataModule):
         self.save: bool = config["models"]["save"]
         self.batch_size = config["train"]["batch_size"]
         self.num_workers = config["train"]["num_workers"]
-        self.original_size = config["data"]["original_size"]
 
     def setup(self, stage: str):
         self.dataset_train = WakeGANDataset(
@@ -96,7 +95,6 @@ class WakeGANDataset:
         self.type = dataset_type
         self.data_subdir = [os.path.join(data_dir, "ux")]
         self.channels = config["channels"]
-        self.original_size = config["original_size"]
         self.size = config["size"]
         self.clim = [config["figures"]["clim_ux"]]
         self.wt_grid = config["wt_grid"]
@@ -179,9 +177,7 @@ class WakeGANDataset:
         return image
 
     def _read_image(self, idx: int):
-        image = torch.zeros(
-            (len(self), self.channels, self.original_size[0], self.original_size[1])
-        )
+        image = torch.zeros((len(self), self.channels, self.size[0], self.size[1]))
         for i, fns in enumerate(self.images_fns):
             img_path = os.path.join(self.data_subdir[i], fns[idx])
             image = io.read_image(path=img_path, mode=io.ImageReadMode.GRAY)
@@ -227,9 +223,7 @@ class WakeGANDataset:
         return norm_params
 
     def _calculate_statistics(self):
-        images = torch.zeros(
-            (len(self), self.channels, self.original_size[0], self.original_size[1])
-        )
+        images = torch.zeros((len(self), self.channels, self.size[0], self.size[1]))
         for i, fns in enumerate(self.images_fns):
             for c, image_fn in enumerate(fns):
                 img_path = os.path.join(self.data_subdir[i], image_fn)
@@ -272,5 +266,4 @@ class WakeGANDataset:
     ) -> Tensor:
         image = WakeGANDataset.unnormalize_image(norm_type, norm_params, image)
         image = WakeGANDataset.rescale_back_to_velocity(image, clim)
-        image = transforms.Resize((44, 44))(image)
         return image

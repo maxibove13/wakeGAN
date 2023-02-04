@@ -194,7 +194,7 @@ class PlottingCallback(callbacks.Callback):
                 "profiles": plots.ProfilesPlotter(
                     wt_d=pl_module.wt_d,
                     limits=pl_module.limits,
-                    size=pl_module.original_size,
+                    size=pl_module.size,
                     metadata=[mtdts[i] for i in indices[:4]],
                     dataset="validation",
                 ),
@@ -262,7 +262,7 @@ class PlottingCallback(callbacks.Callback):
             "profiles": plots.ProfilesPlotter(
                 wt_d=pl_module.wt_d,
                 limits=pl_module.limits,
-                size=pl_module.original_size,
+                size=pl_module.size,
                 metadata=[mtdts[i] for i in indices[:4]],
                 dataset="testing",
             ),
