@@ -9,6 +9,7 @@ import json
 import os
 
 from matplotlib import pyplot as plt
+from neptune.new.types import File
 from pytorch_lightning import callbacks
 from torchvision import utils
 import torch
@@ -63,7 +64,7 @@ class LoggingCallback(callbacks.Callback):
 
 
 class PlottingCallback(callbacks.Callback):
-    def __init__(self):
+    def __init__(self, enable_logger=False):
         super().__init__()
         self.metrics = {
             "loss_gen_adv": [],
@@ -75,7 +76,7 @@ class PlottingCallback(callbacks.Callback):
             "fid_train": [],
             "fid_val": [],
         }
-        self.priority = 100
+        self.enable_logger = enable_logger
 
     def on_fit_start(self, trainer, pl_module):
         self.plotters = {
@@ -109,7 +110,7 @@ class PlottingCallback(callbacks.Callback):
                 pl_module.images_val["synth"][1].detach().cpu(),
             ]
         )
-        self.plotters["metrics"].plot(
+        fig_metrics, fig_losses = self.plotters["metrics"].plot(
             {
                 "gen_adv": self.metrics["loss_gen_adv"],
                 "gen_mse": self.metrics["loss_gen_mse"],
@@ -128,6 +129,10 @@ class PlottingCallback(callbacks.Callback):
             },
             trainer.current_epoch,
         )
+
+        if trainer.current_epoch == trainer.max_epochs - 1 and self.enable_logger:
+            pl_module.loggers[1].experiment["train"].log(File.as_image(fig_metrics))
+            pl_module.loggers[1].experiment["train"].log(File.as_image(fig_losses))
 
         plt.close()
 
@@ -200,8 +205,19 @@ class PlottingCallback(callbacks.Callback):
                 images_to_plot.append(pl_module.images_val["real"][i].detach().cpu())
                 images_to_plot.append(pl_module.images_val["synth"][i].detach().cpu())
 
-            self.plotters_val["flow"].plot(images_to_plot)
-            self.plotters_val["profiles"].plot(images_to_plot)
+            fig_flow = self.plotters_val["flow"].plot(images_to_plot)
+            fig_profiles = self.plotters_val["profiles"].plot(images_to_plot)
+
+            if self.enable_logger:
+                pl_module.loggers[1].experiment["validation"].log(
+                    File.as_image(fig_flow["img"])
+                )
+                pl_module.loggers[1].experiment["validation"].log(
+                    File.as_image(fig_flow["err"])
+                )
+                pl_module.loggers[1].experiment["validation"].log(
+                    File.as_image(fig_profiles)
+                )
 
             with open(os.path.join("figures", "validation", "metrics.json"), "w") as f:
                 json.dump(

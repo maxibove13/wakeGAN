@@ -12,6 +12,7 @@ from typing import Dict
 import json
 import os
 
+from pytorch_lightning.loggers import NeptuneLogger
 import pytorch_lightning as pl
 import torch
 import yaml
@@ -22,20 +23,34 @@ from src.wakegan import WakeGAN
 
 torch.set_float32_matmul_precision("medium")
 
+with open("config.yaml") as file:
+    config = yaml.safe_load(file)
+
 
 def main():
-    with open("config.yaml") as file:
-        config = yaml.safe_load(file)
+    if config["ops"]["neptune_logger"]:
+        neptune_run = NeptuneLogger(
+            project="idatha/wakegan",
+            api_key="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiIyNWQ5YjJjZi05OTE1LTRhNWEtODdlZC00MWRlMzMzNGMwMzYifQ==",
+            log_model_checkpoints=False,
+        )
+    else:
+        neptune_run = None
+
+    loggers = [neptune_run] if neptune_run else []
 
     trainer = pl.Trainer(
         accelerator="gpu",
         devices=1,
         log_every_n_steps=1,
         max_epochs=config["train"]["num_epochs"],
-        callbacks=[callbacks.PlottingCallback()],
+        callbacks=[callbacks.PlottingCallback(neptune_run)],
+        logger=loggers,
         enable_checkpointing=False,
-        logger=False,
     )
+
+    if config["ops"]["neptune_logger"]:
+        neptune_run.log_hyperparams(params=config)
 
     dataset_train = dataset.WakeGANDataset(
         data_dir=os.path.join("data", "preprocessed", "tracked", "train"),

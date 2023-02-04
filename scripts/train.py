@@ -30,11 +30,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger("train")
 
-# neptune_logger = NeptuneLogger(
-#     project="idatha/wakegan",
-#     api_key="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiIyNWQ5YjJjZi05OTE1LTRhNWEtODdlZC00MWRlMzMzNGMwMzYifQ==",
-#     log_model_checkpoints=False,
-# )
+with open("config.yaml") as file:
+    config = yaml.safe_load(file)
+
 tb_logger = TensorBoardLogger(save_dir="logs/")
 
 
@@ -42,21 +40,18 @@ torch.set_float32_matmul_precision("medium")
 
 
 def main():
-    with open("config.yaml") as file:
-        config = yaml.safe_load(file)
+    if config["ops"]["neptune_logger"]:
+        neptune_run = NeptuneLogger(
+            project="idatha/wakegan",
+            api_key="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiIyNWQ5YjJjZi05OTE1LTRhNWEtODdlZC00MWRlMzMzNGMwMzYifQ==",
+            log_model_checkpoints=False,
+        )
+    else:
+        neptune_run = None
 
-    dataset, datamodule, trainer = init(config)
-
-    model = WakeGAN(config, dataset.norm_params)
-
-    trainer.fit(model, datamodule)
-    trainer.validate(model, datamodule.val_dataloader(), ckpt_path="best")
-    # trainer.test(model, datamodule.test_dataloader(), ckpt_path="best")
-
-
-def init(config):
-
-    # neptune_logger.log_hyperparams(params=config)
+    loggers = (
+        [tb_logger, neptune_run] if config["ops"]["neptune_logger"] else [tb_logger]
+    )
 
     checkpoint_callback = ModelCheckpoint(
         dirpath=None,
@@ -72,8 +67,9 @@ def init(config):
         dataset_type="train",
         save_norm_params=True if config["models"]["save"] else False,
     )
-
     datamodule = dataset.WakeGANDataModule(config)
+
+    model = WakeGAN(config, dataset_train.norm_params)
 
     trainer = pl.Trainer(
         default_root_dir="logs",
@@ -81,16 +77,20 @@ def init(config):
         devices=1,
         log_every_n_steps=1,
         max_epochs=config["train"]["num_epochs"],
-        logger=[tb_logger],
+        logger=loggers,
         callbacks=[
             callbacks.LoggingCallback(logger),
-            callbacks.PlottingCallback(),
+            callbacks.PlottingCallback(enable_logger=config["ops"]["neptune_logger"]),
             checkpoint_callback,
-            # batchsize_finder,
         ],
     )
 
-    return dataset_train, datamodule, trainer
+    if config["ops"]["neptune_logger"]:
+        neptune_run.log_hyperparams(params=config)
+
+    trainer.fit(model, datamodule)
+    trainer.validate(model, datamodule.val_dataloader(), ckpt_path="best")
+    trainer.test(model, datamodule.test_dataloader(), ckpt_path="best")
 
 
 if __name__ == "__main__":

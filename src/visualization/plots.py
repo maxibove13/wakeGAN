@@ -80,6 +80,8 @@ class MetricsPlotter:
         self._plot_metrics(x, metrics, epoch)
         self._plot_losses(x, loss, epoch)
 
+        return self.fig_metrics, self.fig_losses
+
     def _plot_losses(self, x: Dict, loss: Dict, epoch: int) -> None:
         self.axs_losses[0].plot(
             x, loss["disc_synth"], label="Discriminator synth loss", color="C1"
@@ -177,8 +179,9 @@ class FlowImagePlotter:
         }
 
         for c, ax in enumerate(self.grid_template["img"]):
-            # ax.get_xaxis().set_visible(True)
-            # ax.get_yaxis().set_visible(True)
+            if self.monitor:
+                ax.get_xaxis().set_visible(False)
+                ax.get_yaxis().set_visible(False)
 
             self._set_ax_addons_img(c, ax)
 
@@ -228,8 +231,6 @@ class FlowImagePlotter:
             +config["data"]["lim_around_wt"][3],
         ]
         for c, (ax, im) in enumerate(zip(self.grid_template["img"], grid["img"])):
-            if c == 0:
-                print(im[:, 0])
             im = ax.imshow(
                 im,
                 cmap=cm.coolwarm,
@@ -287,39 +288,44 @@ class FlowImagePlotter:
             os.path.join(fig_path, "pixel_diff.png"), bbox_inches="tight"
         )
 
+        return self.fig
+
     def _set_ax_addons_img(self, c, ax):
 
-        secax = ax.secondary_yaxis("left")
-        ax.tick_params(
-            axis="both",
-            which="major",
-            labelsize=6,
-            length=2,
-            width=0.4,
-            direction="in",
-        )
-        ax.tick_params(
-            axis="both",
-            which="minor",
-            labelsize=6,
-            length=2,
-            width=0.4,
-            direction="in",
-        )
-        secax.tick_params(
-            axis="both",
-            which="major",
-            labelsize=6,
-            length=2,
-            width=0.4,
-            direction="in",
-        )
-        secax.set_yticks(np.arange(-1, 2), labels=[])
-        ax.set_yticks(np.arange(-1, 2))
-        ax.set_xticks(np.arange(-1, 4))
-        ax.yaxis.tick_right()
-
-        secax.set_yticks(np.arange(-1, 2))
+        if not self.monitor:
+            secax = ax.secondary_yaxis("left")
+            ax.tick_params(
+                axis="both",
+                which="major",
+                labelsize=6,
+                length=2,
+                width=0.4,
+                direction="in",
+            )
+            ax.tick_params(
+                axis="both",
+                which="minor",
+                labelsize=6,
+                length=2,
+                width=0.4,
+                direction="in",
+            )
+            secax.tick_params(
+                axis="both",
+                which="major",
+                labelsize=6,
+                length=2,
+                width=0.4,
+                direction="in",
+            )
+            secax.set_yticks(np.arange(-1, 2), labels=[])
+            ax.set_yticks(np.arange(-1, 2))
+            ax.set_xticks(np.arange(-1, 4))
+            ax.yaxis.tick_right()
+            secax.set_yticks(np.arange(-1, 2))
+        else:
+            ax.set_yticks([])
+            ax.set_xticks([])
 
         if c == 0:
             ax.get_yaxis().set_visible(True)
@@ -364,12 +370,12 @@ class FlowImagePlotter:
         ax.set_yticks([])
         if self.monitor:
             if c == 0:
-                ax.set_ylabel("training sample")
+                ax.set_ylabel("train sample")
                 ax.set_title("U$_{real}$")
                 ax.set_yticks([])
                 ax.set_title("U$_{fake}$ - U$_{real}$")
             elif c == 1:
-                ax.set_ylabel("Testing sample")
+                ax.set_ylabel("val sample")
         else:
             if c == 0:
                 ax.set_ylabel("$U_x^{fake} - U_x^{real}$", fontsize=10)
@@ -401,8 +407,6 @@ class ProfilesPlotter:
         self.x = np.linspace(x_left, x_right, num=size[0])
         self.y = np.linspace(y_bottom, y_top, num=size[0])
 
-        print(self.y)
-
         self.prec = [m["prec"] for m in metadata]
         self.angle = [m["angle"] for m in metadata]
         self.pos = [m["pos"] for m in metadata]
@@ -419,8 +423,6 @@ class ProfilesPlotter:
 
                 real_prof = im_real[:, x_index].cpu()
                 synth_prof = im_synth[:, x_index].cpu()
-                if j == 0 and i == 0:
-                    print(real_prof)
                 (real_curve,) = ax.plot(
                     real_prof, self.y / self.wt_d, c="k", ls="-", label="CFD"
                 )
@@ -451,6 +453,8 @@ class ProfilesPlotter:
             dpi=300,
             bbox_inches="tight",
         )
+
+        return self.fig
 
 
 def plot_histogram(dataset):
@@ -485,6 +489,8 @@ def plot_histogram(dataset):
         axs[c].axvline(mean + std, color="k", linestyle="dashed", linewidth=1)
         axs[c].axvline(mean - std, color="k", linestyle="dashed", linewidth=1)
 
+        if c == 1 and dataset.norm_type == "min_max":
+            axs[c].set_xlim(dataset.range)
         axs[c].set_title(f"$\mu={mean:.2f}$, $\sigma={std:.2f}$")
         axs[c].set_xlabel(
             f'Pixel value {"(unnormalized)" if c == 0 else "(normalized)"}'
