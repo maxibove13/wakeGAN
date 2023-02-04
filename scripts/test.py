@@ -12,7 +12,7 @@ from typing import Dict
 import json
 import os
 
-from pytorch_lightning.loggers import NeptuneLogger
+from pytorch_lightning.loggers import NeptuneLogger, TensorBoardLogger
 import pytorch_lightning as pl
 import torch
 import yaml
@@ -26,6 +26,8 @@ torch.set_float32_matmul_precision("medium")
 with open("config.yaml") as file:
     config = yaml.safe_load(file)
 
+tb_logger = TensorBoardLogger(save_dir="logs/other_logs")
+
 
 def main():
     if config["ops"]["neptune_logger"]:
@@ -37,7 +39,9 @@ def main():
     else:
         neptune_run = None
 
-    loggers = [neptune_run] if neptune_run else []
+    loggers = (
+        [tb_logger, neptune_run] if config["ops"]["neptune_logger"] else [tb_logger]
+    )
 
     trainer = pl.Trainer(
         accelerator="gpu",
@@ -46,6 +50,7 @@ def main():
         max_epochs=config["train"]["num_epochs"],
         callbacks=[callbacks.PlottingCallback(neptune_run)],
         logger=loggers,
+        deterministic=True,
         enable_checkpointing=False,
     )
 

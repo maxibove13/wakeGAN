@@ -78,6 +78,7 @@ def main():
         log_every_n_steps=1,
         max_epochs=config["train"]["num_epochs"],
         logger=loggers,
+        deterministic=True,
         callbacks=[
             callbacks.LoggingCallback(logger),
             callbacks.PlottingCallback(enable_logger=config["ops"]["neptune_logger"]),

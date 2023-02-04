@@ -24,7 +24,6 @@ class WakeGAN(pl.LightningModule):
         self._set_hparams(config, norm_params)
 
         torch.manual_seed(0)
-        torch.use_deterministic_algorithms(True)
 
         self.generator = dcgan.Generator(self.channels, self.size[0], self.feat_gen)
         self.discriminator = dcgan.Discriminator(
