@@ -347,18 +347,19 @@ class FlowImagePlotter:
         else:
             if c == 0:
                 ax.set_title("U$^{real}, x/D$", fontsize=8)
-                ax.set_ylabel(f"$Ux, x/D$ (\#{c//2 + 1})", fontsize=6, labelpad=2)
+                ax.set_ylabel(f"$Ux, y/D$ (\#{c//2 + 1})", fontsize=6, labelpad=2)
             elif c == 1:
-                ax.set_ylabel(f"$Ux, x/D$ (\#{c//2 + 1})", fontsize=6, labelpad=2)
+                # ax.set_ylabel(f"$Ux, y/D$ (\#{c//2 + 1})", fontsize=6, labelpad=2)
                 ax.set_title("U$^{synth}, x/D$", fontsize=8)
+                ax.get_yaxis().set_visible(True)
             elif c == 2:
                 ax.set_title("U$^{real}, x/D$", fontsize=8)
                 ax.get_yaxis().set_visible(True)
-                ax.set_ylabel(f"$Ux, x/D$ (\#{c//2 + 1})", fontsize=6, labelpad=2)
+                ax.set_ylabel(f"$Ux, y/D$ (\#{c//2 + 1})", fontsize=6, labelpad=2)
                 ax.set_yticks([])
             elif c in [4, 6]:
                 ax.get_yaxis().set_visible(True)
-                ax.set_ylabel(f"$Ux, x/D$ (\#{c//2 + 1})", fontsize=6, labelpad=2)
+                ax.set_ylabel(f"$Ux, y/D$ (\#{c//2 + 1})", fontsize=6, labelpad=2)
                 ax.set_yticks([])
                 ax.set_aspect("equal")
             elif c == 3:
@@ -411,6 +412,7 @@ class ProfilesPlotter:
         self.prec = [m["prec"] for m in metadata]
         self.angle = [m["angle"] for m in metadata]
         self.pos = [m["pos"] for m in metadata]
+        self.timestep = [m["timestep"] for m in metadata]
 
     def plot(self, images: list):
 
@@ -439,7 +441,7 @@ class ProfilesPlotter:
                 if j == 0:
                     m_s = "ms$^{-1}$"
                     ax.set_ylabel(
-                        f"$y/D$ -\#{i+1}, prec.: {self.prec[i]} {m_s}, {self.angle[i]}°, {self.pos[i]}",
+                        f"$y/D$ -\#{i+1}, prec.: {self.prec[i]} {m_s}, {self.angle[i]}°, {self.pos[i]}, t{self.timestep[i]} ",
                         fontsize=14,
                     )
 

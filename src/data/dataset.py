@@ -76,7 +76,7 @@ class WakeGANDataModule(pl.LightningDataModule):
     def test_dataloader(self):
         return torch.utils.data.DataLoader(
             self.dataset_test,
-            batch_size=len(self.dataset_test),
+            batch_size=self.batch_size,
             num_workers=self.num_workers,
             shuffle=False,
         )
@@ -197,6 +197,7 @@ class WakeGANDataset:
             "prec": float(filename[1:4]) / 100,
             "angle": angle,
             "pos": (pos_x, pos_y),
+            "timestep": int(filename[-8:-7]),
         }
 
         return metadata

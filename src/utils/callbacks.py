@@ -16,7 +16,7 @@ import torch
 
 from src.visualization import plots
 
-seed = 2
+seed = 3
 
 
 class LoggingCallback(callbacks.Callback):
@@ -49,6 +49,7 @@ class LoggingCallback(callbacks.Callback):
         self.logger.info(
             f"Training set samples: {len(trainer.datamodule.dataset_train)}\n"
             f"Validation set samples: {len(trainer.datamodule.dataset_val)}\n"
+            f"Testing set samples: {len(trainer.datamodule.dataset_test)}\n"
             f"Number of epochs: {trainer.max_epochs}\n"
             f"Mini batch size: {pl_module.minibatch_size}\n"
             f"Number of training batches: {len(trainer.train_dataloader)}\n"
@@ -162,14 +163,13 @@ class PlottingCallback(callbacks.Callback):
     def on_validation_epoch_end(self, trainer, pl_module):
         if trainer.state.fn != "fit":
             mtdts = []
-            for c, (prec, angle, pos_x, pos_y, im, synth) in enumerate(
+            for c, (prec, angle, pos_x, pos_y, timestep) in enumerate(
                 zip(
                     pl_module.metadatas_val["prec"],
                     pl_module.metadatas_val["angle"],
                     pl_module.metadatas_val["pos"][0],
                     pl_module.metadatas_val["pos"][1],
-                    pl_module.images_val["real"],
-                    pl_module.images_val["synth"],
+                    pl_module.metadatas_val["timestep"],
                 )
             ):
 
@@ -178,6 +178,7 @@ class PlottingCallback(callbacks.Callback):
                         "prec": prec.item(),
                         "angle": angle,
                         "pos": (pos_x.item(), pos_y.item()),
+                        "timestep": timestep.item(),
                     }
                 )
 
@@ -233,12 +234,13 @@ class PlottingCallback(callbacks.Callback):
     def on_test_epoch_end(self, trainer, pl_module):
 
         mtdts = []
-        for c, (prec, angle, pos_x, pos_y) in enumerate(
+        for c, (prec, angle, pos_x, pos_y, timestep) in enumerate(
             zip(
                 pl_module.metadatas_test["prec"],
                 pl_module.metadatas_test["angle"],
                 pl_module.metadatas_test["pos"][0],
                 pl_module.metadatas_test["pos"][1],
+                pl_module.metadatas_test["timestep"],
             )
         ):
             mtdts.append(
@@ -246,6 +248,7 @@ class PlottingCallback(callbacks.Callback):
                     "prec": prec.item(),
                     "angle": angle,
                     "pos": (pos_x.item(), pos_y.item()),
+                    "timestep": timestep.item(),
                 }
             )
 
