@@ -156,9 +156,9 @@ class WakeGAN(pl.LightningModule):
         )
 
         return {
-            "reals": self.images_val["real"],
-            "synths": self.images_val["synth"],
-            "metadatas": self.metadatas_val,
+            "reals": reals,
+            "synths": synths,
+            "metadatas": metadatas,
         }
 
     def test_step(self, batch, batch_idx):
@@ -201,6 +201,12 @@ class WakeGAN(pl.LightningModule):
             on_epoch=True,
             prog_bar=False,
         )
+
+        return {
+            "reals": reals,
+            "synths": synths,
+            "metadatas": metadatas,
+        }
 
     def predict_step(self, batch, batch_idx):
         inflows, _ = batch

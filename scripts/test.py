@@ -20,6 +20,7 @@ import yaml
 from src.data import dataset
 from src.utils import callbacks
 from src.wakegan import WakeGAN
+from scripts import generate_wf
 
 torch.set_float32_matmul_precision("medium")
 
@@ -77,6 +78,8 @@ def main():
         datamodule=datamodule,
         ckpt_path=_get_ckpt_path(),
     )
+
+    generate_wf.main()
 
 
 def _get_ckpt_path():

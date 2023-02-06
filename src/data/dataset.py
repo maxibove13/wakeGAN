@@ -186,7 +186,8 @@ class WakeGANDataset:
 
     def _extract_metadata(self, filename: str) -> Tuple:
         pos = int(filename.split("_")[0][6:])
-        pos_x = pos % self.wt_grid[0]
+
+        pos_x = pos // self.wt_grid[1]
         pos_y = pos % self.wt_grid[1]
 
         with open(os.path.join("data", "aux", "turns.json")) as f:

@@ -142,15 +142,40 @@ class PlottingCallback(callbacks.Callback):
     ):
         if trainer.state.fn != "fit":
             path = os.path.join("data", "generated", "validation")
-            for real, synth, prec, angle, pos_x, pos_y in zip(
+            for real, synth, prec, angle, pos_x, pos_y, timestep in zip(
                 outputs["reals"],
                 outputs["synths"],
                 outputs["metadatas"]["prec"],
                 outputs["metadatas"]["angle"],
                 outputs["metadatas"]["pos"][0],
                 outputs["metadatas"]["pos"][1],
+                outputs["metadatas"]["timestep"],
             ):
-                filename = f"{prec.item()}_{angle}_({pos_x.item()},{pos_y.item()}).pt"
+                filename = f"{prec.item()}_{angle}_({pos_x.item()},{pos_y.item()})_{timestep}.pt"
+                # utils.save_image(
+                #     real, f"{os.path.join(path, 'real', filename)}", normalize=True
+                # )
+                # utils.save_image(
+                #     synth, f"{os.path.join(path, 'synth', filename)}", normalize=True
+                # )
+                torch.save(real, f"{os.path.join(path, 'real', filename)}")
+                torch.save(synth, f"{os.path.join(path, 'synth', filename)}")
+
+    def on_test_batch_end(
+        self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
+    ):
+        if trainer.state.fn != "fit":
+            path = os.path.join("data", "generated", "testing")
+            for real, synth, prec, angle, pos_x, pos_y, timestep in zip(
+                outputs["reals"],
+                outputs["synths"],
+                outputs["metadatas"]["prec"],
+                outputs["metadatas"]["angle"],
+                outputs["metadatas"]["pos"][0],
+                outputs["metadatas"]["pos"][1],
+                outputs["metadatas"]["timestep"],
+            ):
+                filename = f"{prec.item()}_{angle}_({pos_x.item()},{pos_y.item()})_{timestep}.pt"
                 # utils.save_image(
                 #     real, f"{os.path.join(path, 'real', filename)}", normalize=True
                 # )
