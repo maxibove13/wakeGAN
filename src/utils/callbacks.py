@@ -13,10 +13,14 @@ from neptune.new.types import File
 from pytorch_lightning import callbacks
 from torchvision import utils
 import torch
+import yaml
 
 from src.visualization import plots
 
 seed = 3
+
+with open("config.yaml") as file:
+    config = yaml.safe_load(file)
 
 
 class LoggingCallback(callbacks.Callback):
@@ -175,7 +179,12 @@ class PlottingCallback(callbacks.Callback):
                 outputs["metadatas"]["pos"][1],
                 outputs["metadatas"]["timestep"],
             ):
-                filename = f"{prec.item()}_{angle}_({pos_x.item()},{pos_y.item()})_{timestep}.pt"
+                if config["data"]["t_window"] == 1000:
+                    filename = f"{prec.item()}_{angle}_({pos_x.item()},{pos_y.item()})_{timestep}.pt"
+                else:
+                    filename = (
+                        f"{prec.item()}_{angle}_({pos_x.item()},{pos_y.item()}).pt"
+                    )
                 # utils.save_image(
                 #     real, f"{os.path.join(path, 'real', filename)}", normalize=True
                 # )

@@ -68,11 +68,11 @@ def main():
     datamodule = dataset.WakeGANDataModule(config)
     model = WakeGAN(config, dataset_train.norm_params)
 
-    trainer.validate(
-        model=model,
-        datamodule=datamodule,
-        ckpt_path=_get_ckpt_path(),
-    )
+    # trainer.validate(
+    #     model=model,
+    #     datamodule=datamodule,
+    #     ckpt_path=_get_ckpt_path(),
+    # )
     trainer.test(
         model=model,
         datamodule=datamodule,

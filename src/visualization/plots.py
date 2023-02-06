@@ -172,8 +172,9 @@ class FlowImagePlotter:
                 self.fig["err"],
                 111,
                 nrows_ncols=(2, 1) if monitor else (1, 4),
-                axes_pad=0.15,
+                axes_pad=0.19,
                 share_all="True",
+                label_mode="all",
                 cbar_location="right",
                 cbar_mode="edge",
             ),
@@ -187,19 +188,21 @@ class FlowImagePlotter:
             self._set_ax_addons_img(c, ax)
 
         for c, ax in enumerate(self.grid_template["err"]):
+            ax.get_xaxis().set_visible(True)
+            ax.get_yaxis().set_visible(True)
             self._set_ax_addons_err(c, ax)
 
-        if not self.monitor:
-            # self.fig["img"].suptitle(
-            #     # f"Flow field comparison\n"
-            #     f"Average RMSE for {self.dataset} dataset: ({rmse:.3f})",
-            #     y=0.6,
-            # )
-            self.fig["err"].suptitle(
-                # f"Flow field error comparison\n"
-                f"Average RMSE for {self.dataset} dataset: ({rmse:.3f})",
-                y=0.75,
-            )
+        # if not self.monitor:
+        #     # self.fig["img"].suptitle(
+        #     #     # f"Flow field comparison\n"
+        #     #     f"Average RMSE for {self.dataset} dataset: ({rmse:.3f})",
+        #     #     y=0.6,
+        #     # )
+        #     self.fig["err"].suptitle(
+        #         # f"Flow field error comparison\n"
+        #         f"Average RMSE for {self.dataset} dataset: ({rmse:.3f})",
+        #         y=0.75,
+        #     )
 
     def plot(self, images: list):
         if self.monitor:
@@ -265,11 +268,7 @@ class FlowImagePlotter:
         ):
 
             err = ax.imshow(
-                im,
-                cmap=cm.coolwarm,
-                interpolation="none",
-                vmin=-1,
-                vmax=1,
+                im, cmap=cm.coolwarm, interpolation="none", vmin=-1, vmax=1, extent=lims
             )
             cbar = cax.colorbar(err)
             if not self.monitor:
@@ -368,20 +367,58 @@ class FlowImagePlotter:
                 pass
 
     def _set_ax_addons_err(self, c, ax):
-        ax.get_xaxis().set_visible(False)
-        ax.set_yticks([])
+
+        if not self.monitor:
+            secax = ax.secondary_yaxis("left")
+            ax.tick_params(
+                axis="both",
+                which="major",
+                labelsize=6,
+                length=2,
+                width=0.4,
+                direction="in",
+            )
+            ax.tick_params(
+                axis="both",
+                which="minor",
+                labelsize=6,
+                length=2,
+                width=0.4,
+                direction="in",
+            )
+            secax.tick_params(
+                axis="both",
+                which="major",
+                labelsize=6,
+                length=2,
+                width=0.4,
+                direction="in",
+            )
+            secax.set_yticks(np.arange(-1, 2), labels=[])
+            ax.set_yticks(np.arange(-1, 2))
+            # ax.set_yticklabels(["-1", "0", "1"])
+            ax.set_xticks(np.arange(-1, 4))
+            ax.yaxis.tick_right()
+            secax.set_yticks(np.arange(-1, 2))
+        else:
+            ax.set_yticks([])
+            ax.set_xticks([])
+
+        ax.get_xaxis().set_visible(True)
+        ax.get_yaxis().set_visible(True)
+        # ax.set_yticks([])
         if self.monitor:
             if c == 0:
                 ax.set_ylabel("train sample")
                 ax.set_title("U$_{real}$")
-                ax.set_yticks([])
+                # ax.set_yticks([])
                 ax.set_title("U$_{fake}$ - U$_{real}$")
             elif c == 1:
                 ax.set_ylabel("val sample")
         else:
             if c == 0:
                 ax.set_ylabel("$U_x^{fake} - U_x^{real}$", fontsize=10)
-            ax.set_title(f"\#{c+1}")
+            ax.set_title(f"\#{c+1}", fontsize=8)
 
 
 class ProfilesPlotter:
@@ -441,7 +478,7 @@ class ProfilesPlotter:
                 if j == 0:
                     m_s = "ms$^{-1}$"
                     ax.set_ylabel(
-                        f"$y/D$ -\#{i+1}, prec.: {self.prec[i]} {m_s}, {self.angle[i]}°, {self.pos[i]}, t{self.timestep[i]} ",
+                        f"$y/D$ -\#{i+1}, prec.: {self.prec[i]} {m_s}, {self.angle[i]}°, {self.pos[i]}",
                         fontsize=14,
                     )
 

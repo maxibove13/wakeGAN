@@ -405,7 +405,6 @@ def isolate_wt_slice(wt_xy_sim, wt, ax, grid_x, grid_y, plot=True):
         )  # Right
 
     # Identify indices of corners
-    # print(grid_x[0, :])
     idx_0 = np.abs(grid_x[0, :] - corners[0][0]).argmin()
     idx_1 = np.abs(grid_x[0, :] - corners[1][0]).argmin()
     idy_0 = np.abs(grid_y[:, 0] - corners[0][1]).argmin()
