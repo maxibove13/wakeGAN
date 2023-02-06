@@ -65,10 +65,10 @@ def main():
     )
     wakegan.eval()
 
-    for c, (prec, angle, turn, timestep) in enumerate(
+    for c, (prec, angle, turn, timestep, clim) in enumerate(
         [
-            ["5.76", "-5.0", "n5", "0"],
-            ["7.68", "0.0", "pr", "0"],
+            ["5.76", "-5.0", "n5", "0", (1, 6)],
+            ["7.68", "0.0", "pr", "0", (3, 8)],
         ]
     ):
 
@@ -149,7 +149,12 @@ def main():
             zip(axs, [wf_values_real.T, wf_values_synth.T])
         ):
             im = ax.imshow(
-                image, cmap=cm.coolwarm, extent=lims, origin="lower", vmin=0, vmax=12
+                image,
+                cmap=cm.coolwarm,
+                extent=lims,
+                origin="lower",
+                vmin=clim[0],
+                vmax=clim[1],
             )
             cbar = fig.colorbar(
                 im, ax=ax, orientation="vertical", fraction=0.0237, pad=0.04
@@ -165,7 +170,7 @@ def main():
                 ax.set_xticklabels([])
 
         im_err = axs_err.imshow(
-            (wf_values_real.T - wf_values_synth.T),
+            (wf_values_synth.T - wf_values_real.T),
             cmap=cm.coolwarm,
             extent=lims,
             origin="lower",
@@ -175,7 +180,7 @@ def main():
         cbar = fig.colorbar(
             im_err, ax=axs_err, orientation="vertical", fraction=0.0237, pad=0.04
         )
-        cbar.set_label("[ms$^{-1}$]", labelpad=12, rotation=270)
+        cbar.set_label("ms$^{-1}$]", labelpad=12, rotation=270)
         axs_err.set_xlim(0, 4500)
         axs_err.set_ylabel("$y$ [m]")
         axs_err.set_title("U$^{real}$ - U$^{synth}$ wind farm $Ux$ flow", fontsize=10)
