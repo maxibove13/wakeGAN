@@ -1,5 +1,5 @@
 ops:
-  neptune_logger: False
+  neptune_logger: True
 
 data:
   wt_grid: [3, 5]
