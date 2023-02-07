@@ -35,7 +35,7 @@ wt_coord = loadmat(os.path.join("data", "aux", "coord_layout.mat"))
 wt_xy = {}
 
 for idx, turn in enumerate(turns.keys()):
-    wt_xy[turn] = wt_coord["coord_layout"][:, 0:2, idx]
+    wt_xy[turn] = wt_coord["lay"][:, 0:2, idx]
 
 path = os.path.join("data", "generated", "testing", "real")
 
