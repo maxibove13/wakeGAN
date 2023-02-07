@@ -80,9 +80,9 @@ def main():
         for row in range(3):
             for col in range(5):
                 if config["data"]["t_window"] == 1000:
-                    filename = f"{prec}_{angle}_({2-row},{col})_{timestep}.pt"
+                    filename = f"{prec}_{angle}_({row},{col})_{timestep}.pt"
                 elif config["data"]["t_window"] == 4000:
-                    filename = f"{prec}_{angle}_({2-row},{col}).pt"
+                    filename = f"{prec}_{angle}_({row},{col}).pt"
                 else:
                     raise ValueError("Invalid t_window value")
                 real = torch.load(os.path.join(path, filename))  # [-1, 1]
