@@ -469,17 +469,23 @@ class ProfilesPlotter:
                 (synth_curve,) = ax.plot(
                     synth_prof, self.y / self.wt_d, c="r", ls="-.", label="GAN"
                 )
+                ax.tick_params(
+                    axis="both",
+                    which="major",
+                    labelsize=16,
+                    direction="in",
+                )
                 ax.set_xlim(left=1, right=12)
                 ax.grid()
-                ax.set_title(f"{j-2}D")
-                ax.tick_params(direction="in")
+                ax.set_title(f"{j-2}D", fontsize=14)
+                # ax.tick_params(direction="in")
                 if i == len(self.grid.axes_row) - 1 and j == 0:
                     ax.set_xlabel("$U_x$ [ms$^{-1}$]", fontsize=16)
                 if j == 0:
                     m_s = "ms$^{-1}$"
                     ax.set_ylabel(
-                        f"$y/D$ -\#{i+1}, prec.: {self.prec[i]} {m_s}, {self.angle[i]}°, {self.pos[i]}",
-                        fontsize=14,
+                        f"$y/D$ -\#{i+1}, {self.prec[i]} {m_s}, {self.angle[i]}°, {self.pos[i]}",
+                        fontsize=22,
                     )
 
         self.fig.legend(
