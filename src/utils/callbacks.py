@@ -155,7 +155,12 @@ class PlottingCallback(callbacks.Callback):
                 outputs["metadatas"]["pos"][1],
                 outputs["metadatas"]["timestep"],
             ):
-                filename = f"{prec.item()}_{angle}_({pos_x.item()},{pos_y.item()})_{timestep}.pt"
+                if config["data"]["t_window"] == 1000:
+                    filename = f"{prec.item()}_{angle}_({pos_x.item()},{pos_y.item()})_{timestep}.pt"
+                else:
+                    filename = (
+                        f"{prec.item()}_{angle}_({pos_x.item()},{pos_y.item()}).pt"
+                    )
                 # utils.save_image(
                 #     real, f"{os.path.join(path, 'real', filename)}", normalize=True
                 # )
