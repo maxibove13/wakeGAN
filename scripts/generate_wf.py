@@ -67,7 +67,7 @@ def main():
 
     for c, (prec, angle, turn, timestep, clim) in enumerate(
         [
-            ["5.76", "-5.0", "n5", "0", (1, 6)],
+            ["5.76", "-7.5", "n7", "0", (1, 6)],
             ["7.68", "0.0", "pr", "0", (3, 8)],
         ]
     ):
@@ -80,9 +80,9 @@ def main():
         for row in range(3):
             for col in range(5):
                 if config["data"]["t_window"] == 1000:
-                    filename = f"{prec}_{angle}_({2-row},{col})_{timestep}.pt"
+                    filename = f"{prec}_{angle}_({row},{col})_{timestep}.pt"
                 elif config["data"]["t_window"] == 4000:
-                    filename = f"{prec}_{angle}_({2-row},{col}).pt"
+                    filename = f"{prec}_{angle}_({row},{col}).pt"
                 else:
                     raise ValueError("Invalid t_window value")
                 real = torch.load(os.path.join(path, filename))  # [-1, 1]
