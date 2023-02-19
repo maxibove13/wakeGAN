@@ -85,9 +85,7 @@ def main():
                     filename = f"{prec}_{angle}_({row},{col}).pt"
                 else:
                     raise ValueError("Invalid t_window value")
-
                 real = torch.load(os.path.join(path, filename))  # [-1, 1]
-
                 if col == 0:
                     inflow = real[:, :, 0].unsqueeze(dim=0)  # 1x1x64, NCH
                     synth = wakegan(inflow.to(wakegan.device))  # 1x1x64x64, NCHW
@@ -187,17 +185,11 @@ def main():
         axs_err.set_ylabel("$y$ [m]")
         axs_err.set_title("U$^{real}$ - U$^{synth}$ wind farm $Ux$ flow", fontsize=10)
 
-        path_fig = os.path.join("figures", "testing")
-
         fig.savefig(
-            os.path.join(path_fig, f"wf_flow_{prec}_{angle}_{timestep}.png"),
-            bbox_inches="tight",
-            dpi=1000,
+            f"wf_flow_{prec}_{angle}_{timestep}.png", bbox_inches="tight", dpi=1000
         )
         fig_err.savefig(
-            os.path.join(path_fig, f"wf_err_{prec}_{angle}_{timestep}.png"),
-            bbox_inches="tight",
-            dpi=1000,
+            f"wf_err_{prec}_{angle}_{timestep}.png", bbox_inches="tight", dpi=1000
         )
 
 
