@@ -1,7 +1,6 @@
 data/raw
 data/preprocessed/ux
 data/preprocessed/uy
-data/aux/**
 
 data/generated
 
