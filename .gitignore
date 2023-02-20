@@ -10,6 +10,7 @@ figures/monitor/*
 figures/validation/*
 figures/test/*
 figures/wf_slices
+figures/reference
 
 logs
 lightning_logs
