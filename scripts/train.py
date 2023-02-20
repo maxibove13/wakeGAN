@@ -22,6 +22,9 @@ from src.data import dataset
 from src.utils import callbacks
 from src.wakegan import WakeGAN
 
+if "logs" not in os.listdir("."):
+    os.mkdir("logs")
+
 logging.basicConfig(
     format="%(message)s",
     filename=os.path.join("logs", "train.log"),
