@@ -7,8 +7,10 @@ conditional generative adversarial network", Energy, [https://doi.org/10.1016/j.
 
 <details>
 <summary >Limitations:</summary>
+
 - Only trained with streamwise velocity component (Ux) for now
 - It generates only horizontal planes at hub's height (90m)
+
 </details>
 
 
