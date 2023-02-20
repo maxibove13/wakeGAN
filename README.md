@@ -1,33 +1,41 @@
 # Wind farm wake modeling using cDCGAN
 
-Predict the velocity field around a wind turbine given an inflow wind profile.
+## Predict the velocity field around a wind turbine given an inflow wind profile.
 
 Based on the work by Zhang J, Zhao X, "Wind farm wake modeling based on deep convolutional
 conditional generative adversarial network", Energy, [https://doi.org/10.1016/j.energy.2021.121747](https://doi.org/10.1016/j.energy.2021.121747)
 
-Limitations:
-
+<details>
+<summary >Limitations:</summary>
 - Only trained with streamwise velocity component (Ux) for now
 - It generates only horizontal planes at hub's height (90m)
+</details>
 
-![Image comparison test](https://github.com/maxibove13/wakeGAN/blob/main/figures/test/image_comparison_test.png)
 
-# Repo usage
+![Image comparison test](https://github.com/maxibove13/wakeGAN/blob/main/figures/reference/images_test_ref.png)
 
-## Pull preprocessed data from remote storage
+# Usage
 
-### enable use of gdrive service account:
-```
-dvc remote modify storage gdrive_use_service_account true
-```
-### add gdrive credentials to dvc remote:
-```
-dvc remote modify storage --local gdrive_service_account_json_file_path <credentials_file_name>.json
-```
-### pull dataset from remote:
-```
-dvc pull
-```
+## data
+### Pull preprocessed data from remote storage
+
+1. Enable use of gdrive service account:
+
+    ```
+    dvc remote modify storage gdrive_use_service_account true
+    ```
+
+2. add gdrive credentials to dvc remote:
+
+    ```
+    dvc remote modify storage --local gdrive_service_account_json_file_path <credentials_file_name>.json
+    ```
+
+3. pull dataset from remote:
+    ```
+    dvc pull
+    ```
+
 <details>
 <summary>(Optional) Preprocess dataset from raw data (CFD simulations)</summary>
 
@@ -47,46 +55,83 @@ dvc pull
 </details>
 
 
-
-## Train the wakeGAN:
+## train the wakeGAN:
 
 ```
-./train.py
+./scripts/train.py
 ```
 
 - You can modify hyperparameters in `config.yaml` file
-- You can monitor the training both watching the prints in the shell and checking the `/figures/monitor` folder. This folder contains three figures that update every epoch:
-    - `image_comparison.png`: watch real vs. synth generated images for both training and testing set
-    - `metrics.png`: track adversarial loss and RMSE evolution over epochs
-    - `err_evol.png`: watch error (just the difference in m/s) between real and synth images for training and testing set  
+- You can monitor the training by watching the output in the shell, checking the logs in `logs/train.log` and checking the `figures/monitor` directory. This folder contains three figures that update every epoch:
+    - `images.png`: watch real vs. synth generated images for both training and testing set
+    - `metrics.png`: track RMSE and FID metrics.
+    - `losses.png`: track generator and discriminator loss.  
+    - `pixel_diff.png`: watch error (just the difference in m/s) between real and synth images for training and testing set.
 
-## Test the wakeGAN:
+## test the wakeGAN:
 
 ```
-./test.py
+./scripts/test.py
 ```
 
-Check generated files in `/figures/test`:
-- `images.png`: flow field comparison between real and synth images for four random samples
-- `pixel_diff.png`: error for those four random samples
+Check generated files in `figures/test`:
+- `images.png`: flow field comparison between real and synth images for four random samples.
+- `pixel_diff.png`: error for those four random samples.
 - `profiles.png`: wind profiles at different streamwise position in relation to the wind turbine for both the ground truth and the generated flow.
 
+## data versions
 
-# Data pipeline overview:
+We use different branches to track different versions of the dataset. We could also track the versions with `git commit`, but as these versions aren't an "improvement" of the previous version but just a different way of preprocessing the raw dataset we mantain the versions in branches.
+
+Currently we are using two types of preprocessed dataset with velocity means taken at different average windows:
+
+1. temporal window of 1000 time steps - branch: `main`
+2. temporal window of 4000 time steps - branch: `t_window_4000`
+
+## change between data versions
+
+In order to use a different version first check that your git working directory is clean, and then checkout to your target branch:
+
+```
+git checkout t_window_4000
+```
+
+tell dvc to checkout to this branch:
+
+
+```
+dvc checkout
+```
+
+Now you should see the oter version of the dataset.
+
+You can go back to the previous state with the same commands:
+
+```
+git checkout main
+dvc checkout
+```
+
+# data pipeline overview:
 
 1) CFD simulations of a WF
-2) Horizontal slices at hub's height of mean horizontal velocity ( $U_x$ , $U_y$ )
+2) Horizontal slices at hub's height of mean horizontal velocity ($U_x$)
 3) Crop slices into several images around each WT of the WF.
-4) Save them as image files mapped with a certain $v_{min}$ and $v_{max}$. ( $v_{min}$ , $v_{max}$ ) -> ( $0$ , $255$ )
-5) Read them, convert them to float32, rescale them to ( $-1$ , $1$ )
-6) Extract first column of pixels on each channel (inflow velocity)
-7) Transform to tensor
-8) For each fold:
-    For each epoch:
-        For each minibatch:
-            - Generate fake image given inflow
-            - Pass real, fake and inflows to discriminator
-            - Evaluate loss, backprop on Disc and Gen
+4) Save them as image files mapped with a certain $v_{min}$ and $v_{max}$. 
+    
+    ( $v_{min}$ , $v_{max}$ ) -> ( $0$ , $255$ )
+
+5) Load the images, convert them to `float32` and rescale them to [ $-1$ , $1$ ]
+6) Extract first column of pixels for each image (inflow velocity).
+7) Training loop:
+    
+        for each epoch:
+            for each minibatch:
+                - Generate fake image given inflow
+                - Pass real, fake and inflows to discriminator
+                - Evaluate loss, backprop on Disc and Gen
+
+
 
 
 # cDCGAN architecture
@@ -106,21 +151,23 @@ Check generated files in `/figures/test`:
 
 ## Results
 
-### Error between real and synthetic flow field
+### error between real and synthetic flow field
 
-![Image comparison test](https://github.com/maxibove13/wakeGAN/blob/main/figures/test/image_comparison_err_test.png)
+![Image comparison test](https://github.com/maxibove13/wakeGAN/blob/main/figures/reference/pixel_diff_test_ref.png)
 
-### Real vs. generated Wind profiles at different streamwise positions relative to WT diameter
-
-<p align='center'>
-    <img src="https://github.com/maxibove13/wakeGAN/blob/main/figures/test/profiles.png" alt="wind profiles" width="500"/>
-</p>
-
-### Adversarial loss and RMSE evolution over epochs
+### real vs. generated wind profiles at different streamwise positions relative to WT diameter
 
 <p align='center'>
-    <img src="https://raw.githubusercontent.com/maxibove13/wakeGAN/main/figures/reference/metrics_ref.png" alt="loss & rmse" width="500"/>
+    <img src="https://github.com/maxibove13/wakeGAN/blob/main/figures/reference/profiles_test_ref.png" alt="wind profiles" width="500"/>
 </p>
+
+### complete wf real and synthetic flow
+
+<p align='center'>
+    <img src="https://github.com/maxibove13/wakeGAN/blob/main/figures/reference/wf_flow_5.76_-7.5_0.png" alt="wf flow" width="500"/>
+</p>
+
+
 
 ## data
 
@@ -128,25 +175,8 @@ Check generated files in `/figures/test`:
 
 Contains the chaman LES simulation outputs of the WF for different precursors and turns.
 Each simulation is composed of 18 regions.
-The data is present through a symbolic link between the actual storage folder and `/data/raw` directory.
 
-## Random comments on the approach
-
-Generator takes the parameters $\mu$ as input and outputs the flow field prediction U as the output
-
-Discriminator takes the data pair of the embedded flow parameter Z and the corresponding flow field $U$ or $U_{gen}$ (real or generated) as the input, and zeros or ones as outputs.
-
-The main difference between CGAN and GAN is that the labels (here the flow parameters u) are combined with the corresponding flow field for the examination by the discriminator, while GAN only distinguishes the generated flow field from the real flow field without the labeling information.
-
-The $\mu$ parameters are the input of the CFD simulations.
-These parameters are collected in a input tensor X of shape [ $N$ , $N_{\mu}$ ]
-
-input: [ $N$ , $X_3$, $C$ ] (they use profile along y axis)
-output: [ $N$ , $X_1$ , $X_2$, $X_3$ , $C$ ] (flow field data, C is 2 - $U_x$ and $U_y$ -, $N$ samples)
-
-The loss is just the common adversarial loss but for the Discriminator instead of x we use [ $U$ , $\mu$ ] and for the Generator we use [ $G(U)$ , $\mu$ ] 
-
-# Versioning data with DVC
+# Versioning data with DVC (only for non-tracked data)
 
 Let's track our splited data using [DVC](https://dvc.org/)
 
@@ -158,9 +188,9 @@ dvc init
 
 Note: Check that the data you want to tracked isn't in `.gitignore`
 
-In my case, I'm going to track only the splitted data (splitted between `train` and `test`) which lives in `data/preprocessed/tracked`
+We're going to track the splitted data (splitted between `train`, `val` `test`) which lives in `data/preprocessed/tracked`
 
-Then, let's add the data we are going to track to dvc staging area: 
+Let's add the data we are going to track to dvc staging area: 
 
 ```
 dvc add data/preprocessed/tracked/
@@ -241,23 +271,7 @@ Remember that on each branch the we keep track of `tracked.dvc` not of the data 
 Rebase tu upgrade the feature branch with main changes
 
 
-A general steady-state parametrized fluid system can be described by:
-
-```math
-P[u] = 0, x ~ E ~ \Omega 
-```
-```math
-B[u] = 0, x ~ E ~ \delta ~ \Omega
-```
-
-Where $u$ is the state of the system while the differential operator $P$ (parametrized by $\mu_p$) represent the PDEs describing the fluid systems, the boundary conditions and the flow domain respectively.
-
-The flow parameters arising from governing equations, the domain geometry and the boundary conditions are denoted as $\mu$.
-Given a specific value of $\mu$ the flow field in the domain \Omega, denoted as $U$, can be obtained by solving the above equation numerically.
-
-Zhang & Zhao, develop a surrogate modeling method to approximate the mapping between \mu and U so that fast and accurate predictions of U can be achieved.
-
-# Reproducibility
+# Reproducibility (for plain pytorch)
 
 In order to make the results reproducible, a random seed has to be set at the beginning of the code:
 
