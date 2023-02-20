@@ -38,9 +38,10 @@ for idx, turn in enumerate(turns.keys()):
     wt_xy[turn] = wt_coord["lay"][:, 0:2, idx]
 
 path = os.path.join("data", "generated", "testing", "real")
+path_figs = os.path.join("figures", "testing")
 
-size = (64, 64)
-wt_d = 126
+size = (config["data"]["size"][0], config["data"]["size"][1])
+wt_d = config["data"]["wt_diam"]
 
 
 wf_grid = (
@@ -186,10 +187,14 @@ def main():
         axs_err.set_title("U$^{real}$ - U$^{synth}$ wind farm $Ux$ flow", fontsize=10)
 
         fig.savefig(
-            f"wf_flow_{prec}_{angle}_{timestep}.png", bbox_inches="tight", dpi=1000
+            os.path.join(path_figs, f"wf_flow_{prec}_{angle}_{timestep}.png"),
+            bbox_inches="tight",
+            dpi=1000,
         )
         fig_err.savefig(
-            f"wf_err_{prec}_{angle}_{timestep}.png", bbox_inches="tight", dpi=1000
+            os.path.join(path_figs, f"wf_err_{prec}_{angle}_{timestep}.png"),
+            bbox_inches="tight",
+            dpi=1000,
         )
 
 

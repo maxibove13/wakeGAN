@@ -1,7 +1,6 @@
 data/raw
 data/preprocessed/ux
 data/preprocessed/uy
-data/aux/**
 
 data/generated
 
@@ -11,6 +10,7 @@ figures/monitor/*
 figures/validation/*
 figures/test/*
 figures/wf_slices
+figures/reference
 
 logs
 lightning_logs
