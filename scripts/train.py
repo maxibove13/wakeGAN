@@ -14,6 +14,7 @@ import time
 
 from pytorch_lightning.callbacks import ModelCheckpoint, BatchSizeFinder
 from pytorch_lightning.loggers import NeptuneLogger, TensorBoardLogger
+import neptune.new as neptune
 import pytorch_lightning as pl
 import torch
 import yaml
@@ -37,7 +38,6 @@ with open("config.yaml") as file:
     config = yaml.safe_load(file)
 
 tb_logger = TensorBoardLogger(save_dir="logs/")
-
 
 torch.set_float32_matmul_precision("medium")
 
@@ -93,8 +93,37 @@ def main():
         neptune_run.log_hyperparams(params=config)
 
     trainer.fit(model, datamodule)
+
+    create_new_model_version(trainer, neptune_run)
+
     trainer.validate(model, datamodule.val_dataloader(), ckpt_path="best")
     trainer.test(model, datamodule.test_dataloader(), ckpt_path="best")
+
+
+def create_new_model_version(trainer, neptune_logger):
+    if config["ops"]["neptune_logger"] and config["models"]["save"]:
+        logger.info("Saving model in neptune")
+
+        import neptune.new as neptune
+
+        model_version = neptune.init_model_version(
+            model="WAK-MOD",
+            project="idatha/wakegan",
+            api_token="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiIyNWQ5YjJjZi05OTE1LTRhNWEtODdlZC00MWRlMzMzNGMwMzYifQ==",  # your credentials
+        )
+        path_to_model = trainer.checkpoint_callback.best_model_path
+        model_version["model/ckpt"].upload(path_to_model)
+        model_version["model/dataset/training"].track_files(
+            os.path.join("data", "preprocessed", "tracked", "train", "ux")
+        )
+        model_version["model/dataset/validation"].track_files(
+            os.path.join("data", "preprocessed", "tracked", "val", "ux")
+        )
+        model_version["model/dataset/testing"].track_files(
+            os.path.join("data", "preprocessed", "tracked", "test", "ux")
+        )
+        model_version["model/run"] = neptune_logger.run["sys/id"].fetch()
+        model_version.change_stage("staging")
 
 
 if __name__ == "__main__":

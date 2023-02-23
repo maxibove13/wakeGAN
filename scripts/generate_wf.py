@@ -18,6 +18,7 @@ from scipy import interpolate
 from matplotlib import pyplot as plt, cm
 import pytorch_lightning as pl
 import torch
+import neptune.new as neptune
 
 from src.wakegan import WakeGAN
 from src.data.dataset import WakeGANDataset
@@ -199,14 +200,15 @@ def main():
 
 
 def _get_ckpt_path():
-    ckpt_path = os.path.join("logs", "lightning_logs")
-    versions = os.listdir(ckpt_path)
-    versions.sort()
-    versions_number = [int(v.split("_")[-1]) for v in versions]
-    versions_number.sort()
-    versions = [f"version_{v}" for v in versions_number]
-    ckpt_name = os.listdir(os.path.join(ckpt_path, versions[-1], "checkpoints"))[0]
-    ckpt_path = os.path.join(ckpt_path, versions[-1], "checkpoints", ckpt_name)
+    if not config["models"]["from_neptune"]:
+        ckpt_path = os.path.join("logs", "lightning_logs")
+        versions = os.listdir(ckpt_path)
+        versions.sort()
+        versions_number = [int(v.split("_")[-1]) for v in versions]
+        versions_number.sort()
+        versions = [f"version_{v}" for v in versions_number]
+        ckpt_name = os.listdir(os.path.join(ckpt_path, versions[-1], "checkpoints"))[0]
+        ckpt_path = os.path.join(ckpt_path, versions[-1], "checkpoints", ckpt_name)
     return ckpt_path
 
 
