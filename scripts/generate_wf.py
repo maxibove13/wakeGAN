@@ -163,27 +163,28 @@ def main():
             ax.set_xlim(0, 4500)
             ax.set_ylabel("$y$ [m]")
             if i == 1:
-                ax.set_title("synthetic wind farm $Ux$ flow", fontsize=10)
+                ax.set_title("predicted wind farm $Ux$ flow", fontsize=10)
                 ax.set_xlabel("$x$ [m]")
             else:
-                ax.set_title("real wind farm $Ux$ flow", fontsize=10)
+                ax.set_title("actual wind farm $Ux$ flow", fontsize=10)
                 ax.set_xticklabels([])
 
         im_err = axs_err.imshow(
-            (wf_values_synth.T - wf_values_real.T),
+            abs((wf_values_synth.T - wf_values_real.T) / wf_values_real.T) * 100,
             cmap=cm.coolwarm,
             extent=lims,
             origin="lower",
-            vmin=-1,
-            vmax=1,
+            vmin=0,
+            vmax=100,
         )
         cbar = fig.colorbar(
             im_err, ax=axs_err, orientation="vertical", fraction=0.0237, pad=0.04
         )
-        cbar.set_label("ms$^{-1}$]", labelpad=12, rotation=270)
+        # cbar.set_label("ms$^{-1}$]", labelpad=12, rotation=270)
+        cbar.set_label("relative error [\%]", labelpad=12, rotation=270)
         axs_err.set_xlim(0, 4500)
         axs_err.set_ylabel("$y$ [m]")
-        axs_err.set_title("U$^{real}$ - U$^{synth}$ wind farm $Ux$ flow", fontsize=10)
+        axs_err.set_title("U$^{actual}$ - U$^{pred}$ wind farm $Ux$ flow", fontsize=10)
 
         fig.savefig(
             os.path.join(path_figs, f"wf_flow_{prec}_{angle}_{timestep}.png"),

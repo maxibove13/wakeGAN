@@ -211,7 +211,6 @@ class PlottingCallback(callbacks.Callback):
                     pl_module.metadatas_val["timestep"],
                 )
             ):
-
                 mtdts.append(
                     {
                         "prec": prec.item(),
@@ -271,7 +270,6 @@ class PlottingCallback(callbacks.Callback):
             plt.close()
 
     def on_test_epoch_end(self, trainer, pl_module):
-
         mtdts = []
         for c, (prec, angle, pos_x, pos_y, timestep) in enumerate(
             zip(
@@ -292,7 +290,8 @@ class PlottingCallback(callbacks.Callback):
             )
 
         torch.manual_seed(seed)
-        indices = torch.randperm(len(pl_module.images_test["real"]))
+        # indices = torch.randperm(len(pl_module.images_test["real"]))
+        indices = [0, 1, 3, 2]
         self.plotters = {
             "flow": plots.FlowImagePlotter(
                 pl_module.channels,

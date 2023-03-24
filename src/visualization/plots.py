@@ -138,7 +138,6 @@ class FlowImagePlotter:
         rmse: float = None,
         dataset: str = None,
     ):
-
         self.monitor = monitor
         self.channels = channels
         self.clim = clim
@@ -266,7 +265,6 @@ class FlowImagePlotter:
                 self.grid_template["err"].cbar_axes,
             )
         ):
-
             err = ax.imshow(
                 im, cmap=cm.coolwarm, interpolation="none", vmin=-1, vmax=1, extent=lims
             )
@@ -291,7 +289,6 @@ class FlowImagePlotter:
         return self.fig
 
     def _set_ax_addons_img(self, c, ax):
-
         if not self.monitor:
             secax = ax.secondary_yaxis("left")
             ax.tick_params(
@@ -345,14 +342,14 @@ class FlowImagePlotter:
                 ax.set_yticks([])
         else:
             if c == 0:
-                ax.set_title("U$^{real}, x/D$", fontsize=8)
+                ax.set_title("U$^{actual}$", fontsize=8)
                 ax.set_ylabel(f"$Ux, y/D$ (\#{c//2 + 1})", fontsize=6, labelpad=2)
             elif c == 1:
                 # ax.set_ylabel(f"$Ux, y/D$ (\#{c//2 + 1})", fontsize=6, labelpad=2)
-                ax.set_title("U$^{synth}, x/D$", fontsize=8)
+                ax.set_title("U$^{pred}$", fontsize=8)
                 ax.get_yaxis().set_visible(True)
             elif c == 2:
-                ax.set_title("U$^{real}, x/D$", fontsize=8)
+                ax.set_title("U$^{actual}$", fontsize=8)
                 ax.get_yaxis().set_visible(True)
                 ax.set_ylabel(f"$Ux, y/D$ (\#{c//2 + 1})", fontsize=6, labelpad=2)
                 ax.set_yticks([])
@@ -361,13 +358,13 @@ class FlowImagePlotter:
                 ax.set_ylabel(f"$Ux, y/D$ (\#{c//2 + 1})", fontsize=6, labelpad=2)
                 ax.set_yticks([])
                 ax.set_aspect("equal")
+                ax.set_xlabel("$x/D$", fontsize=6)
             elif c == 3:
-                ax.set_title("U$^{synth}, x/D$", fontsize=8)
-            elif c == 7:
-                pass
+                ax.set_title("U$^{pred}$", fontsize=8)
+            elif c in [5, 7]:
+                ax.set_xlabel("$x/D$", fontsize=6)
 
     def _set_ax_addons_err(self, c, ax):
-
         if not self.monitor:
             secax = ax.secondary_yaxis("left")
             ax.tick_params(
@@ -417,20 +414,22 @@ class FlowImagePlotter:
                 ax.set_ylabel("val sample")
         else:
             if c == 0:
-                ax.set_ylabel("$U_x^{fake} - U_x^{real}$", fontsize=10)
-            ax.set_title(f"\#{c+1}", fontsize=8)
+                ax.set_ylabel("$y/D$", fontsize=10)
+            ax.set_xlabel("$x/D$", fontsize=10)
+            magnitud = "$U_x^{pred} - U_x^{actual}$"
+            ax.set_title(f"{magnitud}, \#{c+1}", fontsize=8)
 
 
 class ProfilesPlotter:
     def __init__(
         self, wt_d: float, limits: tuple, size: tuple, metadata: dict, dataset: str
     ):
-        self.fig = plt.figure(figsize=(10, 25), dpi=300)
+        self.fig = plt.figure(figsize=(20, 10), dpi=300)
         self.wt_d = wt_d
         self.grid = ImageGrid(
             self.fig,
             111,
-            nrows_ncols=(4, 7),
+            nrows_ncols=(1, 7),
             axes_pad=(0.15, 0.70),
             share_all="False",
             aspect=False,
@@ -452,9 +451,9 @@ class ProfilesPlotter:
         self.timestep = [m["timestep"] for m in metadata]
 
     def plot(self, images: list):
-
         # iterate over grid rows
         for i, ax_row in enumerate(self.grid.axes_row):
+            i = 0
             im_real = images[2 * i]
             im_synth = images[2 * i + 1]
             # iterate over grid columns
@@ -477,23 +476,27 @@ class ProfilesPlotter:
                 )
                 ax.set_xlim(left=1, right=12)
                 ax.grid()
-                ax.set_title(f"{j-2}D", fontsize=14)
+                ax.set_title(f"{j-2}D", fontsize=18)
                 # ax.tick_params(direction="in")
-                if i == len(self.grid.axes_row) - 1 and j == 0:
-                    ax.set_xlabel("$U_x$ [ms$^{-1}$]", fontsize=16)
+                # if j == 0:
+                #     ax.set_xlabel("$U_x$ [ms$^{-1}$]", fontsize=16)
                 if j == 0:
                     m_s = "ms$^{-1}$"
                     ax.set_ylabel(
                         f"$y/D$ -\#{i+1}, {self.prec[i]} {m_s}, {self.angle[i]}°, {self.pos[i]}",
                         fontsize=22,
                     )
+                ax.set_xticks([2, 4, 6, 8, 10])
+                ax.set_xticklabels([], fontsize=20)
+                ax.set_yticks([-2, -1.5, -1, -0.5, 0, 0.5, 1, 1.5, 2])
+                ax.set_yticklabels([-2, -1.5, -1, -0.5, 0, 0.5, 1, 1.5, 2], fontsize=20)
 
-        self.fig.legend(
-            handles=[real_curve, synth_curve],
-            bbox_to_anchor=(0.0, 0.0, 0.9, 0.097),
-            ncol=2,
-            fontsize="xx-large",
-        )
+        # self.fig.legend(
+        #     handles=[real_curve, synth_curve],
+        #     bbox_to_anchor=(0.0, 0.0, 0.9, 0.097),
+        #     ncol=2,
+        #     fontsize="xx-large",
+        # )
         self.fig.savefig(
             os.path.join("figures", self.dataset, "profiles.png"),
             dpi=300,
