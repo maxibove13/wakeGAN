@@ -23,6 +23,9 @@ from src.data import dataset
 from src.utils import callbacks
 from src.wakegan import WakeGAN
 
+torch.set_float32_matmul_precision("medium")
+
+# custom loggers
 if "logs" not in os.listdir("."):
     os.mkdir("logs")
 
@@ -33,24 +36,22 @@ logging.basicConfig(
     filemode="w",
 )
 logger = logging.getLogger("train")
+tb_logger = TensorBoardLogger(save_dir="logs/")
 
+# load hyperparameters config
 with open("config.yaml") as file:
     config = yaml.safe_load(file)
 
-tb_logger = TensorBoardLogger(save_dir="logs/")
-
-torch.set_float32_matmul_precision("medium")
-
 
 def main():
+    # initialize neptune client
+    neptune_run = None
     if config["ops"]["neptune_logger"]:
         neptune_run = NeptuneLogger(
             project="idatha/wakegan",
             api_key="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiIyNWQ5YjJjZi05OTE1LTRhNWEtODdlZC00MWRlMzMzNGMwMzYifQ==",
             log_model_checkpoints=False,
         )
-    else:
-        neptune_run = None
 
     loggers = (
         [tb_logger, neptune_run] if config["ops"]["neptune_logger"] else [tb_logger]
@@ -64,6 +65,7 @@ def main():
         filename="wakegan-{epoch}-{rmse_val_epoch:.2f}",
     )
 
+    # initialize dataset
     dataset_train = dataset.WakeGANDataset(
         data_dir=os.path.join("data", "preprocessed", "tracked", "train"),
         config=config["data"],
@@ -72,8 +74,10 @@ def main():
     )
     datamodule = dataset.WakeGANDataModule(config)
 
+    # initialize model
     model = WakeGAN(config, dataset_train.norm_params)
 
+    # initialize trainer
     trainer = pl.Trainer(
         default_root_dir="logs",
         accelerator="gpu",
@@ -89,15 +93,22 @@ def main():
         ],
     )
 
+    # log hyperparameters in neptune
     if config["ops"]["neptune_logger"]:
         neptune_run.log_hyperparams(params=config)
 
+    # fit model
     trainer.fit(model, datamodule)
 
+    # save model version (checkpoint) in neptune
     create_new_model_version(trainer, neptune_run)
 
+    # validate and test model
     trainer.validate(model, datamodule.val_dataloader(), ckpt_path="best")
     trainer.test(model, datamodule.test_dataloader(), ckpt_path="best")
+
+    # stop neptune run
+    neptune_run.run.stop()
 
 
 def create_new_model_version(trainer, neptune_logger):
