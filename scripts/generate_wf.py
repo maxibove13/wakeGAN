@@ -55,7 +55,6 @@ y_sample = np.linspace(-wt_d * 2, wt_d * 2, num=size[1])
 
 
 def main():
-
     dataset = WakeGANDataset(
         os.path.join("data", "preprocessed", "tracked", "test"),
         config["data"],
@@ -73,7 +72,6 @@ def main():
             ["7.68", "0.0", "pr", "0", (3, 8)],
         ]
     ):
-
         fig, axs = plt.subplots(2, 1)
         fig_err, axs_err = plt.subplots(1, 1)
 
@@ -200,7 +198,7 @@ def main():
 
 
 def _get_ckpt_path():
-    if not config["models"]["from_neptune"]:
+    if not config["models"].get("from_neptune"):
         ckpt_path = os.path.join("logs", "lightning_logs")
         versions = os.listdir(ckpt_path)
         versions.sort()

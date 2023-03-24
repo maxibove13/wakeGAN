@@ -1,5 +1,5 @@
 ops:
-  neptune_logger: True
+  neptune_logger: False
 
 data:
   wt_grid: [3, 5]
@@ -39,7 +39,7 @@ train:
   lr: 1.0e-3
   num_epochs: 60
   f_mse: 0.5
-  batch_size: 64
+  batch_size: 32
   multibatch: True
   num_workers: 8 # number of processes that gen batches in parallel
 

@@ -108,7 +108,8 @@ def main():
     trainer.test(model, datamodule.test_dataloader(), ckpt_path="best")
 
     # stop neptune run
-    neptune_run.run.stop()
+    if neptune_run:
+        neptune_run.run.stop()
 
 
 def create_new_model_version(trainer, neptune_logger):
