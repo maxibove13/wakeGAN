@@ -55,7 +55,7 @@ dvc pull
 
 `main` uses data from a temporal window of 1000 steps, and `t_window_4000` of 4000 steps.
 
-5. You can `git checkout` and `dvc checkout` (one after the other) in order to train/test/eval one or the other dataset.
+5. You can `git checkout` and `dvc pull` (one after the other) in order to train/test/eval one or the other dataset.
 
 # Usage
 
