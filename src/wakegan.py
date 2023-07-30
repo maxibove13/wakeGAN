@@ -6,21 +6,26 @@ __status__ = "Development"
 __date__ = "12/22"
 
 from typing import Dict
+import json
 import os
 
+from torchvision import transforms
 import pytorch_lightning as pl
 import torch
 import torchmetrics
-from torchvision import transforms
+import yaml
 
 from src.data.dataset import WakeGANDataset
 from src.models import dcgan
 
 
 class WakeGAN(pl.LightningModule):
-    def __init__(self, config: Dict, norm_params: Dict):
-
+    def __init__(self, config: Dict = None, norm_params: Dict = None):
         super().__init__()
+        if not config:
+            with open("config.yaml") as file:
+                config = yaml.safe_load(file)
+
         self._set_hparams(config, norm_params)
 
         torch.manual_seed(0)
@@ -52,7 +57,6 @@ class WakeGAN(pl.LightningModule):
         return self.generator(z)
 
     def training_step(self, batch, batch_idx, optimizer_idx):
-
         reals, inflows, _ = batch
 
         synths = self(inflows)
@@ -209,7 +213,7 @@ class WakeGAN(pl.LightningModule):
         }
 
     def predict_step(self, batch, batch_idx):
-        inflows, _ = batch
+        inflows = batch
         return self(inflows)
 
     def configure_optimizers(self):
@@ -283,6 +287,11 @@ class WakeGAN(pl.LightningModule):
             "test": os.path.join("data", "preprocessed", "tracked", "test"),
         }
         self.data_config: Dict = config["data"]
+
+        if not norm_params:
+            with open(os.path.join("data", "aux", "norm_params.json")) as file:
+                norm_params = json.load(file)
+
         self.norm = {
             "type": config["data"]["normalization"]["type"],
             "params": norm_params,

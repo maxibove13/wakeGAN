@@ -19,6 +19,8 @@ from matplotlib import pyplot as plt, cm
 import pytorch_lightning as pl
 import torch
 
+# import neptune.new as neptune
+
 from src.wakegan import WakeGAN
 from src.data.dataset import WakeGANDataset
 
@@ -54,7 +56,6 @@ y_sample = np.linspace(-wt_d * 2, wt_d * 2, num=size[1])
 
 
 def main():
-
     dataset = WakeGANDataset(
         os.path.join("data", "preprocessed", "tracked", "test"),
         config["data"],
@@ -72,7 +73,6 @@ def main():
             ["7.68", "0.0", "pr", "0", (3, 8)],
         ]
     ):
-
         fig, axs = plt.subplots(2, 1)
         fig_err, axs_err = plt.subplots(1, 1)
 
@@ -164,27 +164,28 @@ def main():
             ax.set_xlim(0, 4500)
             ax.set_ylabel("$y$ [m]")
             if i == 1:
-                ax.set_title("synthetic wind farm $Ux$ flow", fontsize=10)
+                ax.set_title("predicted wind farm $Ux$ flow", fontsize=10)
                 ax.set_xlabel("$x$ [m]")
             else:
-                ax.set_title("real wind farm $Ux$ flow", fontsize=10)
+                ax.set_title("actual wind farm $Ux$ flow", fontsize=10)
                 ax.set_xticklabels([])
 
         im_err = axs_err.imshow(
-            (wf_values_synth.T - wf_values_real.T),
+            abs((wf_values_synth.T - wf_values_real.T) / wf_values_real.T) * 100,
             cmap=cm.coolwarm,
             extent=lims,
             origin="lower",
-            vmin=-1,
-            vmax=1,
+            vmin=0,
+            vmax=100,
         )
         cbar = fig.colorbar(
             im_err, ax=axs_err, orientation="vertical", fraction=0.0237, pad=0.04
         )
-        cbar.set_label("ms$^{-1}$]", labelpad=12, rotation=270)
+        # cbar.set_label("ms$^{-1}$]", labelpad=12, rotation=270)
+        cbar.set_label("relative error [\%]", labelpad=12, rotation=270)
         axs_err.set_xlim(0, 4500)
         axs_err.set_ylabel("$y$ [m]")
-        axs_err.set_title("U$^{real}$ - U$^{synth}$ wind farm $Ux$ flow", fontsize=10)
+        axs_err.set_title("U$^{actual}$ - U$^{pred}$ wind farm $Ux$ flow", fontsize=10)
 
         fig.savefig(
             os.path.join(path_figs, f"wf_flow_{prec}_{angle}_{timestep}.png"),
@@ -199,14 +200,15 @@ def main():
 
 
 def _get_ckpt_path():
-    ckpt_path = os.path.join("logs", "lightning_logs")
-    versions = os.listdir(ckpt_path)
-    versions.sort()
-    versions_number = [int(v.split("_")[-1]) for v in versions]
-    versions_number.sort()
-    versions = [f"version_{v}" for v in versions_number]
-    ckpt_name = os.listdir(os.path.join(ckpt_path, versions[-1], "checkpoints"))[0]
-    ckpt_path = os.path.join(ckpt_path, versions[-1], "checkpoints", ckpt_name)
+    if not config["models"].get("from_neptune"):
+        ckpt_path = os.path.join("logs", "lightning_logs")
+        versions = os.listdir(ckpt_path)
+        versions.sort()
+        versions_number = [int(v.split("_")[-1]) for v in versions]
+        versions_number.sort()
+        versions = [f"version_{v}" for v in versions_number]
+        ckpt_name = os.listdir(os.path.join(ckpt_path, versions[-1], "checkpoints"))[0]
+        ckpt_path = os.path.join(ckpt_path, versions[-1], "checkpoints", ckpt_name)
     return ckpt_path
 
 

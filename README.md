@@ -15,27 +15,51 @@ conditional generative adversarial network", Energy, [https://doi.org/10.1016/j.
 
 ![Image comparison test](https://github.com/maxibove13/wakeGAN/blob/main/figures/reference/images_test_ref.png)
 
-# Usage
+# Installation
 
-## data
-### Pull preprocessed data from remote storage
+1. Install packages.
+    
+    <details>
+    intended for a GPU NVIDIA RTX 3070, check the pytorch specific installation for your specific GPU. You may need to change this line in the requirements.txt: 
+    `--extra-index-url https://download.pytorch.org/whl/cu116`
 
-1. Enable use of gdrive service account:
+
+```
+pip install -r requirements.txt
+```
+
+2. Make sure you have `dvc` remote data credentials `.json` in the root directory of the repository.
+
+3. Enable use of gdrive service account:
 
     ```
     dvc remote modify storage gdrive_use_service_account true
     ```
 
-2. add gdrive credentials to dvc remote:
+4. add gdrive credentials to dvc remote:
 
     ```
     dvc remote modify storage --local gdrive_service_account_json_file_path <credentials_file_name>.json
     ```
 
-3. pull dataset from remote:
-    ```
-    dvc pull
-    ```
+5. pull data from gdrive (through dvc which keeps track of the changes)
+
+```
+dvc pull
+```
+
+6. There are two main branches:
+
+    1. `main` (t_window_1000)
+    2. `t_window_4000`
+
+`main` uses data from a temporal window of 1000 steps, and `t_window_4000` of 4000 steps.
+
+5. You can `git checkout` and `dvc checkout` (one after the other) in order to train/test/eval one or the other dataset.
+
+# Usage
+
+## data
 
 <details>
 <summary>(Optional) Preprocess dataset from raw data (CFD simulations)</summary>
