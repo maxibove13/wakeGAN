@@ -18,7 +18,8 @@ from scipy import interpolate
 from matplotlib import pyplot as plt, cm
 import pytorch_lightning as pl
 import torch
-import neptune.new as neptune
+
+# import neptune.new as neptune
 
 from src.wakegan import WakeGAN
 from src.data.dataset import WakeGANDataset

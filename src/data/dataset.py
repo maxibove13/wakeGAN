@@ -91,7 +91,6 @@ class WakeGANDataset:
         norm_params: Dict = None,
         save_norm_params: bool = False,
     ):
-
         self.type = dataset_type
         self.data_subdir = [os.path.join(data_dir, "ux")]
         self.channels = config["channels"]
@@ -119,7 +118,7 @@ class WakeGANDataset:
         self.transforms = transforms.Compose(
             [
                 transforms.ConvertImageDtype(torch.float),
-                transforms.Resize(self.size),
+                transforms.Resize(self.size, antialias=True),
                 transforms.Lambda(self._normalize_image),
             ]
         )

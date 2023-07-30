@@ -21,9 +21,7 @@ from src.models import dcgan
 
 class WakeGAN(pl.LightningModule):
     def __init__(self, config: Dict = None, norm_params: Dict = None):
-
         super().__init__()
-
         if not config:
             with open("config.yaml") as file:
                 config = yaml.safe_load(file)
@@ -59,7 +57,6 @@ class WakeGAN(pl.LightningModule):
         return self.generator(z)
 
     def training_step(self, batch, batch_idx, optimizer_idx):
-
         reals, inflows, _ = batch
 
         synths = self(inflows)

@@ -14,7 +14,8 @@ import time
 
 from pytorch_lightning.callbacks import ModelCheckpoint, BatchSizeFinder
 from pytorch_lightning.loggers import NeptuneLogger, TensorBoardLogger
-import neptune.new as neptune
+
+# import neptune.new as neptune
 import pytorch_lightning as pl
 import torch
 import yaml
@@ -56,6 +57,17 @@ def main():
     loggers = (
         [tb_logger, neptune_run] if config["ops"]["neptune_logger"] else [tb_logger]
     )
+
+    root_dir = os.path.join("data", "generated")
+    folders = [
+        os.path.join("testing", "real"),
+        os.path.join("testing", "synth"),
+        os.path.join("validation", "real"),
+        os.path.join("validation", "synth"),
+    ]
+    if not os.path.exists(root_dir):
+        for folder in folders:
+            os.makedirs(os.path.join(root_dir, folder))
 
     checkpoint_callback = ModelCheckpoint(
         dirpath=None,
@@ -115,8 +127,6 @@ def main():
 def create_new_model_version(trainer, neptune_logger):
     if config["ops"]["neptune_logger"] and config["models"]["save"]:
         logger.info("Saving model in neptune")
-
-        import neptune.new as neptune
 
         model_version = neptune.init_model_version(
             model="WAK-MOD",

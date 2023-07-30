@@ -9,7 +9,8 @@ import json
 import os
 
 from matplotlib import pyplot as plt
-from neptune.new.types import File
+
+# from neptune.new.types import File
 from pytorch_lightning import callbacks
 from torchvision import utils
 import torch

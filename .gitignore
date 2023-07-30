@@ -33,3 +33,4 @@ dvc-remote-data*
 # Exceptions
 !figures/monitor/.gitkeep
 !models/.gitkeep
+!figures/validation/.gitkeep
