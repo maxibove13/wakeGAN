@@ -8,7 +8,7 @@ ipykernel
 jupyter
 lightning[extra]
 matplotlib
-pytorch-lightning==1.9.1
+pytorch-lightning==1.9.2
 pyyaml
 scikit-learn
 scipy
